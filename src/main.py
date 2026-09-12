@@ -1,11 +1,19 @@
+from contextlib import asynccontextmanager
 from typing import Annotated
 from fastapi import FastAPI, Depends
 
-from src.db.database import get_db
+from src.db.database import get_db, init_pool, close_pool
+
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_pool()
+    yield
+    close_pool()
+
+app = FastAPI(lifespan=lifespan)
 
 @app.get('/')
 def test_endpoint():
