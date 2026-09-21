@@ -5,6 +5,7 @@ from fastapi import FastAPI, Depends
 import psycopg2
 
 from src.db.database import get_db, init_pool, close_pool
+from src.api import users
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -32,3 +33,5 @@ def health_check(db: Annotated[psycopg2.extensions.connection, Depends(get_db)])
         rows = cur.fetchall()
     return {"status": "db connected",
             "result": rows}
+
+app.include_router(users.router)
