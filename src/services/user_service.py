@@ -33,6 +33,10 @@ class UserService:
 
         return new_user
 
+    def fetch_user(self, email: str):
+        user = self.user_repo.get_by_email(email)
+        return user
+
     def validate_email_phone(self, email: str, phone: str):
         if self.user_repo.get_by_email(email):
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Email уже занят')

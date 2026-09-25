@@ -11,7 +11,7 @@ class UserRepository:
         self.conn = conn
 
     def get_by_email(self, email: str) -> Optional[Dict[str, Any]]:
-        query = "SELECT id, role_id FROM users WHERE email = %s;"
+        query = "SELECT id, password, role_id FROM users WHERE email = %s;"
         
         with self.conn.cursor() as cur:
             cur.execute(query, (email,))
