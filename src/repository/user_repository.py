@@ -2,7 +2,7 @@ import psycopg2
 from fastapi import Depends
 from typing import Dict, Any, Optional
 
-from src.schemas import CreateUser
+from src.schemas.user_schemas import CreateUser
 from src.core.auth import hash_password
 from src.db.database import get_db
 

@@ -5,7 +5,7 @@ from src.repository.group_repository import GroupRepository
 from src.repository.student_repository import StudentRepository
 from src.repository.teacher_repository import TeacherRepository
 from src.repository.user_repository import UserRepository
-from src.schemas import CreateUser, CreateTeacher, CreateStudent
+from src.schemas.user_schemas import CreateUser, CreateTeacher, CreateStudent
 from src.db.database import get_db
 
 class UserService:
