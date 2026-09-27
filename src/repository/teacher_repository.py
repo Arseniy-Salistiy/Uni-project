@@ -19,6 +19,13 @@ class TeacherRepository:
                                 payload.position, payload.degree,))
             return cur.fetchone()
 
+    def get_teacher_by_id(self, id) -> Dict[str, Any]:
+        query = """SELECT user_id, position FROM teachers WHERE user_id = %s"""
+
+        with self.conn.cursor() as cur:
+            cur.execute(query, (id,))
+            return cur.fetchone()
+
     def get_all_teachers(self) -> List[Dict[str, Any]]:
         query = """ SELECT
                      u.id, u.first_name, u.middle_name, u.last_name,

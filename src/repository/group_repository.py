@@ -8,6 +8,13 @@ class GroupRepository:
     def __init__(self, conn):
         self.conn = conn
 
+    def get_group_by_id(self, id: int) -> Dict[str, Any]:
+        query = """SELECT id, name FROM groups WHERE id = %s"""
+
+        with self.conn.cursor() as cur:
+            cur.execute(query, (id,))
+            return cur.fetchone()
+
     def get_all_groups(self) -> List[Dict[str, Any]]:
         query = """SELECT id, name FROM groups ORDER BY id"""
 
