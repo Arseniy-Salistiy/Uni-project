@@ -1,6 +1,7 @@
 from datetime import datetime, timezone, timedelta
 
 import jwt
+import logging
 import psycopg2
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -8,6 +9,8 @@ from pwdlib import PasswordHash
 
 from src.core.config import settings
 from src.db.database import get_db
+
+logger = logging.getLogger(__name__)
 
 password_hash = PasswordHash.recommended()
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -38,9 +41,10 @@ def get_user(token: str = Depends(oauth2_scheme),
         settings.SECRET_KEY, 
         algorithms=[settings.ALGORITHM])
 
-        email: str|None = payload.get('email')
+        email: str|None = payload.get('sub')
 
         if email is None:
+            logger.debug("нет email")
             raise credentials_exception
 
     except jwt.ExpiredSignatureError:
@@ -48,16 +52,23 @@ def get_user(token: str = Depends(oauth2_scheme),
                             detail='У токена истек срок годности',
                             headers={"WWW-Authenticate": "Bearer"})
 
-    except jwt.PyJWTError:
+    except jwt.PyJWTError as e:
+        logger.exception("ошибка декодирования")
         raise credentials_exception
 
-    query = """SELECT id, email, role_id FROM users WHERE email = %s"""
+    query = """SELECT 
+                id, first_name, last_name, 
+                middle_name, phone, email, 
+                role_id 
+               FROM users 
+               WHERE email = %s"""
 
     with db.cursor() as cur:
         cur.execute(query, (email,))
         user = cur.fetchone()
         
     if user is None:
+        logger.debug("нет юзера")
         raise credentials_exception
 
     return user

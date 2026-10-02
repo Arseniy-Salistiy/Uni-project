@@ -22,7 +22,10 @@ class CourseAssignmentRepository:
                                 data.academic_year))
             return cur.fetchone()
 
-    def get_course_assignment_by_id(self, id: int):
+    def update_course_assignment(self):
+        pass
+
+    def delete_course_assignment(self):
         pass
 
     def get_assignments_for_group(self, group_id: int) -> List[Dict[str, Any]]:

@@ -2,11 +2,16 @@ from contextlib import asynccontextmanager
 from typing import Annotated
 
 from fastapi import FastAPI, Depends
+import logging
 import psycopg2
 
 from src.db.database import get_db, init_pool, close_pool
-from src.api import users
-from src.api import academic_process
+from src.api import users, academic_process, students, teachers
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(name)s (%(filename)s:%(lineno)d): %(message)s",
+)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -37,3 +42,5 @@ def health_check(db: Annotated[psycopg2.extensions.connection, Depends(get_db)])
 
 app.include_router(users.router)
 app.include_router(academic_process.router)
+app.include_router(students.router)
+app.include_router(teachers.router)

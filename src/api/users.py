@@ -13,6 +13,10 @@ router = APIRouter(prefix='/users', tags=['users'])
 def get_myself(current_user: User = Depends(get_user)):
     return current_user
 
+@router.patch('/update')
+def update_user_profile():
+    pass
+
 @router.post('/login')
 def login(form_data: OAuth2PasswordRequestForm = Depends(), service: UserService = Depends(get_user_service)):
     user = service.fetch_user(form_data.username)

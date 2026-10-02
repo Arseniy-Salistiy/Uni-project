@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from src.schemas.user_schemas import User, CreateTeacher
+from src.schemas.user_schemas import User, CreateTeacher, TeacherPatch
 from src.services.user_service import UserService, get_user_service
 from src.repository.teacher_repository import TeacherRepository, get_teacher_repo
 
@@ -19,5 +19,5 @@ def get_teacher_by_id(id: int, service: UserService = Depends(get_user_service))
     return service.fetch_teacher_by_id(id)
 
 @router.patch('/{id}/info')
-def change_teacher_info():
-    pass
+def change_teacher_info(teacher_id: int, payload: TeacherPatch, service: UserService = Depends(get_user_service)):
+    return service.patch_teacher_info(teacher_id, payload)

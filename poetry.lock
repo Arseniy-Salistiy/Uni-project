@@ -409,6 +409,16 @@ files = [
 all = ["coverage (>=7.10.0)", "hypothesis (>=6.141.1)", "mypy (>=1.11.2)", "pytest (>=8.3.2)", "ruff (>=0.16.0)", "ty (>=0.0.37)"]
 
 [[package]]
+name = "logging"
+version = "0.4.9.6"
+description = "A logging module for Python"
+optional = false
+python-versions = "*"
+files = [
+    {file = "logging-0.4.9.6.tar.gz", hash = "sha256:26f6b50773f085042d301085bd1bf5d9f3735704db9f37c1ce6d8b85c38f2417"},
+]
+
+[[package]]
 name = "psycopg2-binary"
 version = "2.9.12"
 description = "psycopg2 - Python-PostgreSQL Database Adapter"
@@ -894,4 +904,4 @@ standard = ["httptools (>=0.8.0)", "python-dotenv (>=0.13)", "pyyaml (>=5.1)", "
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "c4e7b0e1e794668870c2c8d50992c9010d90d228fe448b40c50debf4f702e8b9"
+content-hash = "b5cde212708e16d5e58b03db085655e26c66dc857ad3ab9e8169534089a808bf"

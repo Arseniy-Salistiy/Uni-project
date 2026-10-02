@@ -11,7 +11,7 @@ class UserRepository:
         self.conn = conn
 
     def get_by_email(self, email: str) -> Optional[Dict[str, Any]]:
-        query = "SELECT id, password, role_id FROM users WHERE email = %s;"
+        query = "SELECT id, email, password, role_id FROM users WHERE email = %s;"
         
         with self.conn.cursor() as cur:
             cur.execute(query, (email,))
@@ -23,6 +23,9 @@ class UserRepository:
         with self.conn.cursor() as cur:
             cur.execute(query, (phone,))
             return cur.fetchone()
+
+    def change_profile_info(self):
+        pass
 
     def create_user(self, credentials: CreateUser) -> Dict[str, Any]:
         query = """

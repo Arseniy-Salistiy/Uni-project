@@ -38,7 +38,11 @@ class CourseAssignmentService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail='Группа не найдена')
 
-        return self.course_assignment_repo.get_assignments_for_group(group_id)
+        res = self.course_assignment_repo.get_assignments_for_group(group_id)
+        if not res:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail='У данной группы нет назначенных дисциплин')
+        return res
 
 def get_course_assignment_service(conn=Depends(get_db)) -> CourseAssignmentService:
     return CourseAssignmentService(conn)
