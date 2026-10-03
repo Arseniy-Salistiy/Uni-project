@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str
     SECRET_KEY: str
     ALGORITHM: str
+    STUDENT: int
+    TEACHER: int
+    DEAN: int
+    ADMIN: int
 
     @property
     def POSTGRES_URL(self):
