@@ -49,3 +49,11 @@ class StudentPatch(BaseModel):
     funding_type: None|FundingType = Field(default=None, examples=[None])
     status: None|StudentStatus = Field(default=None, examples=[None])
     enrollment_date: None|date = Field(default=None, examples=[None])
+
+class UserPatch(BaseModel):
+    first_name: str|None = Field(default=None, examples=[None])
+    last_name: str|None = Field(default=None, examples=[None])
+    middle_name: str|None = Field(default=None, examples=[None])
+    email: EmailStr|None = Field(default=None, examples=[None])
+    phone: str|None = Field(default=None, examples=[None], pattern=r"^(\+7|8)[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$")
+    password: str|None = Field(default=None, examples=[None])

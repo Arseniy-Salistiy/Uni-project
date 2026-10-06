@@ -51,7 +51,8 @@ class StudentRepository:
             return cur.fetchone()
 
     def update_student_info(self, student_id: int, payload: StudentPatch):
-        data = {key: value for key, value in payload.model_dump().items() if value}
+        data = payload.model_dump(exclude_unset=True)
+        #data = {key: value for key, value in payload.model_dump().items() if value}
 
         if not data:
             return {}

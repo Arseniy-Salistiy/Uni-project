@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 
-from src.schemas.user_schemas import CreateStudent, User, CreateTeacher
+from src.schemas.user_schemas import User, UserPatch
 from src.services.user_service import get_user_service, UserService
-from src.repository.teacher_repository import TeacherRepository, get_teacher_repo
-from src.repository.student_repository import StudentRepository, get_student_repo
+from src.core.roles import Roles
+from src.core.config import settings
 from src.core.auth import *
 
 router = APIRouter(prefix='/users', tags=['users'])
@@ -14,8 +14,10 @@ def get_myself(current_user: User = Depends(get_user)):
     return current_user
 
 @router.patch('/update')
-def update_user_profile():
-    pass
+def update_user_profile(payload: UserPatch, current_user: User = Depends(get_user),
+                        role_check: bool = Depends(Roles([settings.TEACHER, settings.STUDENT])),
+                        service: UserService = Depends(get_user_service)):
+    return service.patch_user_info(dict(current_user)['id'], payload)
 
 @router.post('/login')
 def login(form_data: OAuth2PasswordRequestForm = Depends(), service: UserService = Depends(get_user_service)):

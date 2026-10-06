@@ -3,7 +3,7 @@ from fastapi import Depends
 from typing import Dict, Any, Optional, List
 
 from src.db.database import get_db
-from src.schemas.course_schemas import CreateCourseAssignment
+from src.schemas.course_schemas import CreateCourseAssignment, CourseAssignmentPatch
 
 class CourseAssignmentRepository:
     def __init__(self, conn):
@@ -22,8 +22,20 @@ class CourseAssignmentRepository:
                                 data.academic_year))
             return cur.fetchone()
 
-    def update_course_assignment(self):
-        pass
+    def update_course_assignment(self, course_id: int, payload: CourseAssignmentPatch) -> Dict[str, Any]:
+        data = payload.model_dump(exclude_unset=True)
+
+        if not data:
+            return {}
+        
+        keys = ','.join([f'{i} = %s' for i in data.keys()])
+        keys_for_returning = 'id,' + ','.join(data.keys())
+        query = f"""UPDATE course_assignments SET {keys} WHERE id=%s
+                    RETURNING {keys_for_returning}"""
+
+        with self.conn.cursor() as cur:
+            cur.execute(query, (*data.values(), course_id,))
+            return cur.fetchone()
 
     def delete_course_assignment(self):
         pass

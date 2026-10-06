@@ -6,7 +6,7 @@ import logging
 import psycopg2
 
 from src.db.database import get_db, init_pool, close_pool
-from src.api import users, academic_process, students, teachers
+from src.api import users, academic_process, students, teachers, dictionaries
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -44,3 +44,4 @@ app.include_router(users.router)
 app.include_router(academic_process.router)
 app.include_router(students.router)
 app.include_router(teachers.router)
+app.include_router(dictionaries.router)

@@ -6,7 +6,7 @@ from src.repository.course_assignment_repository import CourseAssignmentReposito
 from src.repository.group_repository import GroupRepository
 from src.repository.subject_repository import SubjectRepository
 from src.repository.teacher_repository import TeacherRepository
-from src.schemas.course_schemas import CreateCourseAssignment
+from src.schemas.course_schemas import CreateCourseAssignment, CourseAssignmentPatch
 from src.db.database import get_db
 
 class CourseAssignmentService:
@@ -43,6 +43,9 @@ class CourseAssignmentService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail='У данной группы нет назначенных дисциплин')
         return res
+
+    def patch_course_assignment(self, course_id: int, payload: CourseAssignmentPatch):
+        return self.course_assignment_repo.update_course_assignment(course_id, payload)
 
 def get_course_assignment_service(conn=Depends(get_db)) -> CourseAssignmentService:
     return CourseAssignmentService(conn)

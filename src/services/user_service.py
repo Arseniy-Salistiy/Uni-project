@@ -6,7 +6,7 @@ from src.repository.group_repository import GroupRepository
 from src.repository.student_repository import StudentRepository
 from src.repository.teacher_repository import TeacherRepository
 from src.repository.user_repository import UserRepository
-from src.schemas.user_schemas import CreateUser, CreateTeacher, CreateStudent, TeacherPatch, StudentPatch
+from src.schemas.user_schemas import CreateUser, CreateTeacher, CreateStudent, TeacherPatch, StudentPatch, UserPatch
 from src.db.database import get_db
 
 class UserService:
@@ -55,6 +55,9 @@ class UserService:
 
     def patch_student_info(self, student_id: int, payload: StudentPatch):
         return self.student_repo.update_student_info(student_id, payload)
+
+    def patch_user_info(self, user_id: int, payload: UserPatch):
+        return self.user_repo.change_profile_info(user_id, payload)
 
     def fetch_user(self, email: str):
         user = self.user_repo.get_by_email(email)

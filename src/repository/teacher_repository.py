@@ -48,8 +48,8 @@ class TeacherRepository:
             return cur.fetchall()
 
     def update_teacher_info(self, teacher_id: int, payload: TeacherPatch):
-        #data = payload.model_dump(exclude_unset=True)
-        data = {key: value for key, value in payload.model_dump().items() if value}
+        data = payload.model_dump(exclude_unset=True)
+        #data = {key: value for key, value in payload.model_dump().items() if value}
         if not data:
             return {}
 
