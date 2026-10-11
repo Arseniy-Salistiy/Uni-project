@@ -37,10 +37,21 @@ class CourseAssignmentRepository:
             cur.execute(query, (*data.values(), course_id,))
             return cur.fetchone()
 
-    def delete_course_assignment(self):
-        pass
+    def delete_course_assignment(self, course_assignment_id: int) -> dict:
+        query = """DELETE FROM course_assignments WHERE id=%s"""
 
-    def get_assignments_for_group(self, group_id: int) -> List[Dict[str, Any]]:
+        with self.conn.cursor() as cur:
+            cur.execute(query, (course_assignment_id,))
+            return {"course_id": course_assignment_id}
+
+    def get_course_assignment_by_id(self, id: int) -> None | Dict[str, Any]:
+        query = """SELECT * FROM course_assignments WHERE id=%s"""
+
+        with self.conn.cursor() as cur:
+            cur.execute(query, (id,))
+            return cur.fetchone()
+
+    def get_assignments_for_group(self, group_id: int) -> None | List[Dict[str, Any]]:
         query = """SELECT 
                     g.name, s.name, ca.teacher_id,
                     ca.term, ca.academic_year

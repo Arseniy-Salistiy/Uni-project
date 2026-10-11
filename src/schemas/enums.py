@@ -18,3 +18,15 @@ class StudentStatus(str, Enum):
     ACADEMIC = "академический отпуск"
     EXPELLED = "отчислен"
     GRADUATED = "выпустился"
+
+class LessonType(str, Enum):
+    LECTURE = "лекция"
+    SEMINAR = "семинар"
+    LAB = "лабораторная"
+    WORKSHOP = "практика"
+
+class LessonStatus(str, Enum):
+    PRESENT = "присутствовал"
+    ABSENT = "отсутствовал"
+    LATE = "опоздал"
+    EXCUSED = "уважительная причина"

@@ -35,8 +35,6 @@ class User(BaseModel):
     email: EmailStr
     role_id: int
 
-    model_config = ConfigDict(from_attributes=True)
-
 class TeacherPatch(BaseModel):
     department_id: None|int = Field(default=None, examples=[None])
     position: None|str = Field(default=None, examples=[None])
