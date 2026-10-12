@@ -45,7 +45,17 @@ class CourseAssignmentService:
         return res
 
     def patch_course_assignment(self, course_id: int, payload: CourseAssignmentPatch):
+        self._check_course(course_id)
         return self.course_assignment_repo.update_course_assignment(course_id, payload)
+
+    def delete_course_assignment(self, course_id: int):
+        self._check_course(course_id)
+        return self.course_assignment_repo.delete_course_assignment(course_id)
+
+    def _check_course(self, course_id: int):
+        if not self.course_assignment_repo.get_course_assignment_by_id(course_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail='Дисциплина не назначена')
 
 def get_course_assignment_service(conn=Depends(get_db)) -> CourseAssignmentService:
     return CourseAssignmentService(conn)
