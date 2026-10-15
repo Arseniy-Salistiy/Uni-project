@@ -37,9 +37,8 @@ class UserRepository:
             data['password'] = hash_password(data['password'])
 
         keys = ','.join([f'{i} = %s' for i in data.keys()])
-        keys_for_returning = 'id,' + ','.join(data)
         query = f"""UPDATE users SET {keys} WHERE id=%s
-                    RETURNING {keys_for_returning}"""
+                    RETURNING id, first_name, last_name, middle_name, email, phone, role_id"""
 
         with self.conn.cursor() as cur:
             cur.execute(query, (*data.values(), user_id,))

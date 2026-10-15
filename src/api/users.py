@@ -13,7 +13,7 @@ router = APIRouter(prefix='/users', tags=['users'])
 def get_myself(current_user: User = Depends(get_user)):
     return current_user
 
-@router.patch('/update')
+@router.patch('/me', response_model=User)
 def update_user_profile(payload: UserPatch, current_user: User = Depends(get_user),
                         role_check: bool = Depends(Roles([settings.TEACHER, settings.STUDENT])),
                         service: UserService = Depends(get_user_service)):

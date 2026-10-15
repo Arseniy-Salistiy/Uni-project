@@ -72,6 +72,20 @@ class AttendancePeriod(BaseModel):
             raise ValueError('Вторая дата не может быть меньше первой')
         return self
 
-class AttendanceStudent(BaseModel):
-    student_id: int
-    lesson_id: int
+class StudentDate(BaseModel):
+    start_date: None|date = Field(default=None, examples=[None])
+    end_date: None|date = Field(default=None, examples=[None])
+
+    @model_validator(mode='after')
+    def extra_check(self):
+        if (not self.start_date and self.end_date) or (self.start_date and not self.end_date):
+            raise ValueError('Введите обе даты')
+        if (self.start_date and self.end_date) and self.end_date < self.start_date:
+            raise ValueError('конечная дата не может быть раньше начальной')
+        return self
+
+class AttendanceFilter(BaseModel):
+    status: LessonStatus = Field(default=LessonStatus.PRESENT, examples=[LessonStatus.PRESENT])
+
+class Attendance(CreateAttendance):
+    id: int

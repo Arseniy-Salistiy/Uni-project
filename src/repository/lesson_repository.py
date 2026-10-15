@@ -11,7 +11,7 @@ class LessonsRepository:
     def create_lesson(self, payload: CreateLesson) -> Dict[str, Any]:
         query = """INSERT INTO lessons (course_assignment_id, lesson_type, lesson_date, start_time, end_time, room)
                     VALUES(%s, %s, %s, %s, %s, %s)
-                    RETURNING id, course_assignment_id, lesson_type, lesson_date, start_time, end_time, room
+                    RETURNING *
                 """
         with self.conn.cursor() as cur:
             cur.execute(query, (payload.course_assignment_id,
@@ -19,9 +19,11 @@ class LessonsRepository:
                                 payload.start_time, payload.end_time,
                                 payload.room,))
             return cur.fetchone()
-    #Пагинация
+
     def get_lessons_by_group(self, group_id: int, lesson_date: LessonDate) -> List[Dict[str, Any]]:
-        query = """SELECT * FROM lessons WHERE id=%s AND lesson_date BETWEEN %s AND %s"""
+        query = """SELECT l.* FROM lessons as l
+                    JOIN course_assignments as ca ON l.course_assignment_id = ca.id
+                    WHERE ca.group_id=%s AND l.lesson_date BETWEEN %s AND %s"""
 
         with self.conn.cursor() as cur:
             cur.execute(query, (group_id, lesson_date.start_date,
@@ -42,39 +44,58 @@ class LessonsRepository:
             return {}
 
         keys = ', '.join([f'{i}=%s' for i in data.keys()])
-        keys_for_returning = 'id,' + ', '.join(data.keys())
         query = f"""UPDATE lessons SET {keys} WHERE id=%s
-                    RETURNING {keys_for_returning}
+                    RETURNING *
                 """
 
         with self.conn.cursor() as cur:
             cur.execute(query, (*data.values(), lesson_id,))
             return cur.fetchone()
 
-    def delete_lesson(self, lesson_id: int) -> dict:
-        query = """DELETE FROM lessons WHERE id=%s"""
+    def delete_lesson(self, lesson_id: int) -> Dict[str, Any]:
+        query = """DELETE FROM lessons WHERE id=%s
+                    RETURNING *
+                """
 
         with self.conn.cursor() as cur:
             cur.execute(query, (lesson_id,))
-            return {"lesson_id": lesson_id}
+            return cur.fetchone()
 
     def mark_attendance(self, payload: CreateAttendance) -> Dict[str, Any]:
         query = """INSERT INTO attendance (lesson_id, student_id, status)
                     VALUES(%s, %s, %s)
-                    RETURNING id, lesson_id, student_id, status"""
+                    RETURNING *"""
         with self.conn.cursor() as cur:
             cur.execute(query, (payload.lesson_id,
                                 payload.student_id,
                                 payload.status,))
-            return cur.fethcone()
+            return cur.fetchone()
 
-    def get_attendence_by_student(self, payload: AttendanceStudent) -> List[Dict[str, Any]]:
-        query = """SELECT * FROM attendance WHERE student_id=%s AND lesson_id=%s"""
+    def get_attendence_by_student(self, course_id: int, student_id: int, timeline: StudentDate, filter: AttendanceFilter) -> List[Dict[str, Any]]:
+        query = """SELECT a.* FROM attendance as a
+                    JOIN lessons as l ON l.id = a.lesson_id
+                    WHERE l.course_assignment_id=%s AND a.student_id=%s
+                """
+        params = [course_id, student_id]
+        dates = timeline.model_dump(exclude_unset=True)
+        filt = filter.model_dump(exclude_unset=True)
+        print(dates, filt)
+        if filt:
+            d = """AND a.status=%s"""
+            query += d
+            params += [filt['status']]
+        
+        if dates.get('start_date') and dates.get('end_date'):
+            d = """AND l.lesson_date BETWEEN %s AND %s"""
+            query += d
+            params += [dates['start_date'], dates['end_date']]
 
         with self.conn.cursor() as cur:
-            cur.execute(query, (payload.student_id,
-                                payload.lesson_id,))
+            cur.execute(query, tuple(params))
             return cur.fetchall()
+    
+    def get_attendance_group_course(self):
+        pass
 
     def get_student_attendance_period(self, payload: AttendancePeriod) -> List[Dict[str, Any]]:
         query = """SELECT a.* FROM attendance as a
@@ -102,9 +123,8 @@ class LessonsRepository:
             return {}
 
         keys = ', '.join([f'{i}=%s' for i in data.keys()])
-        keys_for_returning = 'id,' + ', '.join(data.keys())
-        query = f"""UPDATE attendance SET {keys} HWERE id=%s
-                    RETURNING {keys_for_returning}
+        query = f"""UPDATE attendance SET {keys} WHERE id=%s
+                    RETURNING *
                 """
 
         with self.conn.cursor() as cur:

@@ -1,7 +1,8 @@
 from contextlib import asynccontextmanager
 from typing import Annotated
+import time
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
 import logging
 import psycopg2
 
@@ -9,7 +10,7 @@ from src.db.database import get_db, init_pool, close_pool
 from src.api import users, academic_process, students, teachers, dictionaries
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s (%(filename)s:%(lineno)d): %(message)s",
 )
 
@@ -19,18 +20,15 @@ async def lifespan(app: FastAPI):
     yield
     close_pool()
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, swagger_ui_parameters={"persistAuthorization": True})
 
-@app.get('/')
-def test_endpoint():
-    return "Hello"
-
-@app.get('/test')
-def fun(db: Annotated[psycopg2.extensions.connection, Depends(get_db)]):
-    with db.cursor() as cur:
-        cur.execute("SELECT * FROM departments")
-        rows = cur.fetchall()
-    return {"result": rows}
+@app.middleware('http')
+async def add_process_time_header(request: Request, call_next):
+    start = time.perf_counter()
+    response = await call_next(request)
+    exec_time = time.perf_counter() - start
+    response.headers["X-Process-Time"] = str(exec_time)
+    return response
 
 @app.get('/health')
 def health_check(db: Annotated[psycopg2.extensions.connection, Depends(get_db)]):

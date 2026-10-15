@@ -27,7 +27,7 @@ class LessonsService:
     def update_lesson(self, lesson_id: int, payload: LessonPatch) -> None | Dict[str, Any]:
         self._check_lesson_id(lesson_id)
         self._check_course_assignment(payload.course_assignment_id)
-        return self.lesson_repo.patch_lesson(lesson_id)
+        return self.lesson_repo.patch_lesson(lesson_id, payload)
 
     def delete_lesson(self, lesson_id: int) -> None | dict:
         self._check_lesson_id(lesson_id)
@@ -42,10 +42,14 @@ class LessonsService:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                                 detail='Посещаемость уже выставлена')
 
-    def get_attendance_by_student(self, payload: AttendanceStudent) -> None | List[Dict[str, Any]]:
-        self._check_student_id(payload.student_id)
-        self._check_lesson_id(payload.lesson_id)
-        return self.lesson_repo.get_attendence_by_student(payload)
+    def get_attendance_by_student(self, course_id: int, student_id: int, timeline: StudentDate, filter: AttendanceFilter) -> None | List[Dict[str, Any]]:
+        self._check_student_id(student_id)
+        self._check_course_assignment(course_id)
+        res = self.lesson_repo.get_attendence_by_student(course_id, student_id, timeline, filter)
+        if not res:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail='Отметок посещаемости не найдено')
+        return res
 
     def get_student_attendance_period(self, payload: AttendancePeriod) -> None | List[Dict[str, Any]]:
         self._check_student_id(payload.student_id)
@@ -62,22 +66,22 @@ class LessonsService:
         return self.lesson_repo.patch_attendance(attendance_id, payload)
 
     def _check_student_id(self, id: None | int) -> None:
-        if not self.student_repo.get_student_by_id(id):
+        if id and not self.student_repo.get_student_by_id(id):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail='Такого студента не существует')
 
     def _check_group_id(self, id: None | int) -> None:
-        if self.group_repo.get_group_by_id(id) is None:
+        if id and self.group_repo.get_group_by_id(id) is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail='Группа не найдена')
 
     def _check_lesson_id(self, id: None | int) -> None:
-        if not self.lesson_repo.get_lesson_by_id(id):
+        if id and not self.lesson_repo.get_lesson_by_id(id):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail='Такой пары нет')
 
     def _check_course_assignment(self, id: None | int) -> None:
-        if self.course_assignment_repo.get_course_assignment_by_id(id) is None:
+        if id and self.course_assignment_repo.get_course_assignment_by_id(id) is None:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                                 detail='Данная дисциплина не назначена данной группе')
 
