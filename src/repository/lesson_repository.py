@@ -8,12 +8,15 @@ class LessonsRepository:
     def __init__(self, conn):
         self.conn = conn
 
-    def create_lesson(self, payload: CreateLesson) -> Dict[str, Any]:
+    def create_lesson(self, payload: CreateLesson, user_id: int) -> Dict[str, Any]:
         query = """INSERT INTO lessons (course_assignment_id, lesson_type, lesson_date, start_time, end_time, room)
                     VALUES(%s, %s, %s, %s, %s, %s)
                     RETURNING *
                 """
+        for_log = "SET LOCAL app.current_user_id=%s;"
+
         with self.conn.cursor() as cur:
+            cur.execute(for_log, (user_id,))
             cur.execute(query, (payload.course_assignment_id,
                                 payload.lesson_type, payload.lesson_date,
                                 payload.start_time, payload.end_time,
@@ -37,7 +40,7 @@ class LessonsRepository:
             cur.execute(query, (lesson_id,))
             return cur.fetchone()
 
-    def patch_lesson(self, lesson_id: int, payload: LessonPatch) -> Dict[str, Any]:
+    def patch_lesson(self, lesson_id: int, user_id: int, payload: LessonPatch) -> Dict[str, Any]:
         data = payload.model_dump(exclude_unset=True)
 
         if not data:
@@ -47,17 +50,21 @@ class LessonsRepository:
         query = f"""UPDATE lessons SET {keys} WHERE id=%s
                     RETURNING *
                 """
+        for_log = "SET LOCAL app.current_user_id=%s;"
 
         with self.conn.cursor() as cur:
+            cur.execute(for_log, (user_id,))
             cur.execute(query, (*data.values(), lesson_id,))
             return cur.fetchone()
 
-    def delete_lesson(self, lesson_id: int) -> Dict[str, Any]:
+    def delete_lesson(self, lesson_id: int, user_id: int) -> Dict[str, Any]:
         query = """DELETE FROM lessons WHERE id=%s
                     RETURNING *
                 """
+        for_log = "SET LOCAL app.current_user_id=%s;"
 
         with self.conn.cursor() as cur:
+            cur.execute(for_log, (user_id,))
             cur.execute(query, (lesson_id,))
             return cur.fetchone()
 

@@ -39,8 +39,10 @@ class UserRepository:
         keys = ','.join([f'{i} = %s' for i in data.keys()])
         query = f"""UPDATE users SET {keys} WHERE id=%s
                     RETURNING id, first_name, last_name, middle_name, email, phone, role_id"""
+        for_log = "SET LOCAL app.current_user_id=%s;"
 
         with self.conn.cursor() as cur:
+            cur.execute(for_log, (user_id,))
             cur.execute(query, (*data.values(), user_id,))
             return cur.fetchone()
 
