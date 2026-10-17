@@ -10,8 +10,6 @@ class CreateCourseAssignment(BaseModel):
 class CourseAssignmentSchema(CreateCourseAssignment):
     id: int
 
-    model_config = ConfigDict(from_attributes=True)
-
 class CourseAssignmentPatch(BaseModel):
     group_id: int|None = Field(default=None, examples=[None])
     subject_id: int|None = Field(default=None, examples=[None])

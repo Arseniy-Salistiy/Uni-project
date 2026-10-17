@@ -1,12 +1,15 @@
 from contextlib import asynccontextmanager
 from typing import Annotated
+from pathlib import Path
 import time
 
 from fastapi import FastAPI, Depends, Request
+from yoyo import get_backend, read_migrations
 import logging
 import psycopg2
 
 from src.db.database import get_db, init_pool, close_pool
+from src.core.config import settings
 from src.api import users, academic_process, students, teachers, dictionaries
 
 logging.basicConfig(
@@ -17,6 +20,13 @@ logging.basicConfig(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_pool()
+    db_url = settings.POSTGRES_URL
+    back = get_backend(db_url)
+    cur_dir = Path(__file__).resolve().parent
+    amp = cur_dir.parent / "migrations"
+    migrations = read_migrations(str(amp))
+    with back.lock():
+        back.apply_migrations(back.to_apply(migrations))
     yield
     close_pool()
 

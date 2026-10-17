@@ -9,6 +9,7 @@ services:
       - "8000:8000"
     volumes:
       - ./src:/app/src
+      - ./migrations:/app/migrations
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       database:
@@ -22,7 +23,7 @@ services:
     ports:
       - "${POSTGRES_PORT}:5432"
     volumes:
-      - ./init:/docker-entrypoint-initdb.d
+      #- ./init:/docker-entrypoint-initdb.d
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", 'pg_isready -U $POSTGRES_USER -d $POSTGRES_NAME']

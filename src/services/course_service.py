@@ -16,7 +16,7 @@ class CourseAssignmentService:
         self.subject_repo = SubjectRepository(conn)
         self.teacher_repo = TeacherRepository(conn)
 
-    def assign_course(self, data: CreateCourseAssignment) -> None | Dict[str, Any]:
+    def assign_course(self, data: CreateCourseAssignment, user_id: int) -> None | Dict[str, Any]:
         if not self.group_repo.get_group_by_id(data.group_id):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail='Группа не существует')
@@ -28,7 +28,7 @@ class CourseAssignmentService:
                                 detail='Преподаватель не существует')
 
         try:
-            return self.course_assignment_repo.assign_course(data)
+            return self.course_assignment_repo.assign_course(data, user_id)
         except UniqueViolation:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                                 detail='Дисциплина уже назначена')
@@ -44,13 +44,13 @@ class CourseAssignmentService:
                                 detail='У данной группы нет назначенных дисциплин')
         return res
 
-    def patch_course_assignment(self, course_id: int, payload: CourseAssignmentPatch):
+    def patch_course_assignment(self, course_id: int, user_id: int, payload: CourseAssignmentPatch):
         self._check_course(course_id)
-        return self.course_assignment_repo.update_course_assignment(course_id, payload)
+        return self.course_assignment_repo.update_course_assignment(course_id, user_id, payload)
 
-    def delete_course_assignment(self, course_id: int):
+    def delete_course_assignment(self, course_id: int, user_id: int):
         self._check_course(course_id)
-        return self.course_assignment_repo.delete_course_assignment(course_id)
+        return self.course_assignment_repo.delete_course_assignment(course_id, user_id)
 
     def _check_course(self, course_id: int):
         if not self.course_assignment_repo.get_course_assignment_by_id(course_id):

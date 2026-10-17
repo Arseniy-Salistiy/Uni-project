@@ -16,22 +16,22 @@ class LessonsService:
         self.student_repo = StudentRepository(conn)
         self.course_assignment_repo = CourseAssignmentRepository(conn)
 
-    def create_lesson(self, payload: CreateLesson) -> None | Dict[str, Any]:
+    def create_lesson(self, payload: CreateLesson, user_id: int) -> None | Dict[str, Any]:
         self._check_course_assignment(payload.course_assignment_id)
-        return self.lesson_repo.create_lesson(payload)
+        return self.lesson_repo.create_lesson(payload, user_id)
 
     def get_lessons_by_group(self, group_id: int, lesson_date: LessonDate) -> None | List[Dict[str, Any]]:
         self._check_group_id(group_id)
         return self.lesson_repo.get_lessons_by_group(group_id, lesson_date)
 
-    def update_lesson(self, lesson_id: int, payload: LessonPatch) -> None | Dict[str, Any]:
+    def update_lesson(self, lesson_id: int, user_id: int, payload: LessonPatch) -> None | Dict[str, Any]:
         self._check_lesson_id(lesson_id)
         self._check_course_assignment(payload.course_assignment_id)
-        return self.lesson_repo.patch_lesson(lesson_id, payload)
+        return self.lesson_repo.patch_lesson(lesson_id, user_id, payload)
 
-    def delete_lesson(self, lesson_id: int) -> None | dict:
+    def delete_lesson(self, lesson_id: int, user_id: int) -> None | dict:
         self._check_lesson_id(lesson_id)
-        return self.lesson_repo.delete_lesson(lesson_id)
+        return self.lesson_repo.delete_lesson(lesson_id, user_id)
 
     def mark_attendance(self, payload: CreateAttendance) -> None | Dict[str, Any]:
         self._check_student_id(payload.student_id)
