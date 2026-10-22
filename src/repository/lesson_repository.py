@@ -86,7 +86,7 @@ class LessonsRepository:
         params = [course_id, student_id]
         dates = timeline.model_dump(exclude_unset=True)
         filt = filter.model_dump(exclude_unset=True)
-        print(dates, filt)
+    
         if filt:
             d = """AND a.status=%s"""
             query += d

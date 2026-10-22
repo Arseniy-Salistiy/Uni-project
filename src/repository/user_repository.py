@@ -64,5 +64,12 @@ class UserRepository:
                             credentials.role_id))
             return cur.fetchone()
 
+    def get_user_by_id(self, id: int) -> None | Dict[str, Any]:
+        query = "SELECT * FROM users WHERE id=%s"
+
+        with self.conn.cursor() as cur:
+            cur.execute(query, (id,))
+            return cur.fetchone()
+
 def get_user_repo(conn=Depends(get_db)) -> UserRepository:
     return UserRepository(conn)
