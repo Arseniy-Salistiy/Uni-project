@@ -12,7 +12,7 @@ from src.core.config import settings
 
 router = APIRouter(prefix='/study', tags=['academic process'])
 
-@router.post('/assignments', response_model=CourseAssignmentSchema, status_code=status.HTTP_201_CREATED)
+@router.post('/course/assignments', response_model=CourseAssignmentSchema, status_code=status.HTTP_201_CREATED)
 def assign_course(
     payload: CreateCourseAssignment,
     service: CourseAssignmentService = Depends(get_course_assignment_service),
@@ -22,7 +22,7 @@ def assign_course(
     res = service.assign_course(payload, dict(cur_user)['id'])
     return res
 
-@router.get('/group/assignments')
+@router.get('/group/course/assignments')
 def get_assignments(
     group_id: int,
     service: CourseAssignmentService = Depends(get_course_assignment_service),
@@ -31,14 +31,14 @@ def get_assignments(
     res = service.get_assignments_for_group(group_id)
     return res
 
-@router.patch('/assignments/{course_id}', response_model=CourseAssignmentSchema)
+@router.patch('/course/assignments/{course_id}', response_model=CourseAssignmentSchema)
 def update_course_assignment(course_id: int, payload: CourseAssignmentPatch,
                             cur_user: User = Depends(get_user),
                             role_check: bool = Depends(Roles([settings.ADMIN, settings.DEAN])),
                             service: CourseAssignmentService = Depends(get_course_assignment_service)):
     return service.patch_course_assignment(course_id, dict(cur_user)['id'], payload)
 
-@router.delete('/assignments/{course_id}', response_model=CourseAssignmentSchema)
+@router.delete('/course/assignments/{course_id}', response_model=CourseAssignmentSchema)
 def delete_course_assignment(course_id: int,
                             cur_user: User = Depends(get_user),
                             role_check: bool = Depends(Roles([settings.ADMIN, settings.DEAN])),

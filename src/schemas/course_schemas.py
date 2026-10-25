@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field
 
 class CreateCourseAssignment(BaseModel):
     group_id: int

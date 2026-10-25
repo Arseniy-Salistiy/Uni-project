@@ -30,3 +30,10 @@ class LessonStatus(str, Enum):
     ABSENT = "отсутствовал"
     LATE = "опоздал"
     EXCUSED = "уважительная причина"
+
+class AssignmentType(str, Enum):
+    LAB = "лабораторная"
+    TEST = "контрольная"
+    TERM_PAPER = "курсовая"
+    ESSAY = "реферат"
+    PROJECT = "проект"

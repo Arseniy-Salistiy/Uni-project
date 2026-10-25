@@ -10,7 +10,7 @@ import psycopg2
 
 from src.db.database import get_db, init_pool, close_pool
 from src.core.config import settings
-from src.api import users, academic_process, students, teachers, dictionaries, admin_panel
+from src.api import users, academic_process, students, teachers, dictionaries, admin_panel, academic_performance
 
 logging.basicConfig(
     level=logging.INFO,
@@ -54,3 +54,4 @@ app.include_router(students.router)
 app.include_router(teachers.router)
 app.include_router(dictionaries.router)
 app.include_router(admin_panel.router)
+app.include_router(academic_performance.router)
