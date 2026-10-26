@@ -39,17 +39,19 @@ def delete_assignment(assignment_id: int,
                         role_check: bool = Depends(Roles([settings.DEAN, settings.TEACHER, settings.STUDENT]))):
     return service.delete_assignment(assignment_id, dict(cur_user)['id'])
 
-@router.get('/grades/student/{student_id}/course/{course_id}', response_model=List[Grade])
+@router.get('/grades/student/{student_id}/course/{course_id}', response_model=List[GradeDetailedResponse])
 def get_grades_student_course(student_id: int, course_id: int,
-                                role_check: bool = Depends(Roles([settings.DEAN, settings.TEACHER])),
+                                role_check: bool = Depends(Roles([settings.STUDENT, settings.DEAN, settings.TEACHER])),
+                                cur_user: User = Depends(get_user),
                                 service: AcademicPerformanceService = Depends(get_academic_perf_service)):
-    return service.get_grades_by_student_course(student_id, course_id)
+    return service.get_grades_by_student_course(student_id, course_id, dict(cur_user))
 
-@router.get('/grades/{grade_id}', response_model=Grade)
+@router.get('/grades/{grade_id}', response_model=GradeDetailedResponse)
 def get_grade(grade_id: int,
-                role_check: bool = Depends(Roles([settings.DEAN, settings.TEACHER])),
-                academic_repo: AcademicPerofrmaceRepository = Depends(get_academic_perf_repo)):
-    return academic_repo.get_grade_by_id(grade_id)
+                cur_user: User = Depends(get_user),
+                role_check: bool = Depends(Roles([settings.STUDENT, settings.DEAN, settings.TEACHER])),
+                service: AcademicPerformanceService = Depends(get_academic_perf_service)):
+    return service.get_grade_by_id(grade_id, dict(cur_user))
 
 @router.post('/grades', response_model=Grade)
 def create_grade(payload: CreateGrade,

@@ -5,6 +5,10 @@ ENV PYTHONUNBUFFERED=1 \
     POETRY_VIRTUALENVS_CREATE=false \
     POETRY_VERSION=1.8.3
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN pip install --no-cache-dir "poetry==${POETRY_VERSION}" && poetry config virtualenvs.create false
 
 WORKDIR /app

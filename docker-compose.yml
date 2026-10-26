@@ -10,6 +10,7 @@ services:
     volumes:
       - ./src:/app/src
       - ./migrations:/app/migrations
+      - ./backups:/app/backups
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       database:
@@ -25,6 +26,7 @@ services:
     volumes:
       #- ./init:/docker-entrypoint-initdb.d
       - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
     healthcheck:
       test: ["CMD-SHELL", 'pg_isready -U $POSTGRES_USER -d $POSTGRES_NAME']
       interval: 10s

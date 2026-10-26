@@ -20,7 +20,11 @@ def hash_password(password: str) -> str:
     return password_hash.hash(password)
 
 def verify_password(password: str, hashed_password: str) -> bool:
-    return password_hash.verify(password, hashed_password)
+    try:
+        return password_hash.verify(password, hashed_password)
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail='Неверный пароль')
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()

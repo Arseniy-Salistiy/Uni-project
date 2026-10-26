@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, BackgroundTasks
 from typing import List, Dict, Any
 
 from src.repository.admin_panel_repository import AdminPanelRepository, get_admin_panel_repo
@@ -9,6 +9,13 @@ class AdminPanelService:
     def __init__(self, conn):
         self.admin_repo = AdminPanelRepository(conn)
         self.user_repo = UserRepository(conn)
+
+    def create_backup(self, background_tasks: BackgroundTasks) -> dict:
+        background_tasks.add_task(self.admin_repo.create_backup)
+        return {
+            "status": "accepted",
+            "message": "Процесс резервного копирования запущен. Файл формируется в папке backups автономно."
+        }
 
     def get_logs(self, page: int, per_page: int) -> List[Dict[str, Any]]:
         offset = (page - 1) * per_page
