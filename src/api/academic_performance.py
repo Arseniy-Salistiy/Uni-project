@@ -53,6 +53,20 @@ def get_grade(grade_id: int,
                 service: AcademicPerformanceService = Depends(get_academic_perf_service)):
     return service.get_grade_by_id(grade_id, dict(cur_user))
 
+@router.get('/final/grade/student/{student_id}/course/{course_id}', response_model=FinalGrade)
+def get_final_grade(student_id: int, course_id: int,
+                    cur_user: User = Depends(get_user),
+                    role_check: bool = Depends(Roles([settings.STUDENT, settings.DEAN, settings.TEACHER])),
+                    service: AcademicPerformanceService = Depends(get_academic_perf_service)):
+    return service.get_final_grade_by_course(student_id, course_id, dict(cur_user))
+
+@router.get('/students/{student_id}/gpa', response_model=StudentGpaResponse)
+def get_student_gpa(student_id: int,
+                    role_check: bool = Depends(Roles([settings.STUDENT, settings.DEAN, settings.TEACHER])),
+                    cur_user: User = Depends(get_user),
+                    service: AcademicPerformanceService = Depends(get_academic_perf_service)):
+    return service.get_student_gpa(student_id, dict(cur_user))
+
 @router.post('/grades', response_model=Grade)
 def create_grade(payload: CreateGrade,
                 cur_user: User = Depends(get_user),

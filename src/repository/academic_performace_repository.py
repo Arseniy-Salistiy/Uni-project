@@ -62,8 +62,36 @@ class AcademicPerofrmaceRepository:
             cur.execute(query, (student_id, course_assignment_id,))
             return cur.fetchall()
 
-    def get_final_grade_student(self):
-        pass
+    def get_final_grade_student(self, student_id: int, course_assignment_id: int) -> Dict[str, Any]:
+        query = """SELECT
+                        g.student_id,
+                        sub.name as subject,
+                        ROUND(SUM(g.grade * a.coefficient) / SUM(a.coefficient))::NUMERIC(3, 1) as final_grade
+                    FROM grades as g
+                    JOIN assignments as a ON g.assignment_id = a.id
+                    JOIN course_assignments as ca ON g.course_assignment_id = ca.id
+                    JOIN subjects as sub ON ca.subject_id = sub.id
+                    WHERE g.student_id = %s AND g.course_assignment_id = %s
+                    AND g.is_final = false
+                    GROUP BY g.student_id, sub.name"""
+        
+        with self.conn.cursor() as cur:
+            cur.execute(query, (student_id, course_assignment_id,))
+            return cur.fetchone()
+
+    def calculate_student_gpa(self, student_id: int) -> Dict[str, Any]:
+        query = """SELECT 
+                        s.user_id as student_id,
+                        u.last_name || ' ' || u.first_name || ' ' || u.middle_name as student_fio,
+                        COALESCE(ROUND(AVG(g.grade), 2), 0.0)::FLOAT as gpa
+                    FROM students s
+                    JOIN users u ON s.user_id = u.id
+                    LEFT JOIN grades g ON g.student_id = s.user_id AND g.is_final = TRUE
+                    WHERE s.user_id = %s
+                    GROUP BY s.user_id, u.last_name, u.first_name, u.middle_name;"""
+        with self.conn.cursor() as cur:
+            cur.execute(query, (student_id,))
+            return cur.fetchone()
 
     def get_grades_by_student(self, student_id: int) -> List[Dict[str, Any]]:
         query = """SELECT * FROM grades_view

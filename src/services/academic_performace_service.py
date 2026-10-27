@@ -45,17 +45,21 @@ class AcademicPerformanceService:
                                     detail='Нельзя смотреть чужие оценки')
         return grade
     
-    def get_final_grade_by_course(self, student_id: int, course_id: int):
+    def get_final_grade_by_course(self, student_id: int, course_id: int, cur_user: dict) -> Dict[str, Any]:
         self._check_course_assigment(course_id)
         self._check_student(student_id)
-        grades = self.academic_perf_repo.get_grades_by_student_course(student_id, course_id)
-        """if not grades:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                detail='У студента нет оценок по данной дисциплине')
-        sum_coefficients = sum([i['coefficient'] for i in grades])
-        final_grade = sum([k['grade'] * v['coefficient'] for k,v in grades]) / sum_coefficients"""
-        
+        if cur_user.get('role_id') == settings.STUDENT:
+            if student_id != cur_user.get('id'):
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                                    detail='Нельзя смотреть чужие оценки')
+        return self.academic_perf_repo.get_final_grade_student(student_id, course_id)
 
+    def get_student_gpa(self, student_id: int, cur_user: dict) -> Dict[str, Any]:
+        if cur_user.get('role_id') == settings.STUDENT and student_id != cur_user.get('id'):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Нельзя смотреть чужой GPA')
+        self._check_student(student_id)
+        return self.academic_perf_repo.calculate_student_gpa(student_id)
+        
     def give_grade(self, graded_by: int, payload: CreateGrade) -> Dict[str, Any]:
         self._check_assignment(payload.assignment_id)
         self._check_course_assigment(payload.course_assignment_id)
