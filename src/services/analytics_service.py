@@ -30,6 +30,19 @@ class AnalyticsService:
         self._check_student(student_id)
         return self.analytics_repo.get_student_summary_report(student_id)
 
+    def get_group_rating(self, group_id: int) -> List[Dict[str, Any]]:
+        self._check_group(group_id)
+        return self.analytics_repo.get_group_rating(group_id)
+
+    def get_academic_stats(self, by_type: str) -> List[Dict[str, Any]]:
+        return self.analytics_repo.get_academic_stats(by_type)
+
+    def get_quality_of_knowledge_report(self) -> List[Dict[str, Any]]:
+        return self.analytics_repo.get_quality_of_knowledge_report()
+
+    def get_debtors_report(self) -> List[Dict[str, Any]]:
+        return self.analytics_repo.get_debtors_report()
+
     def _check_student(self, student_id: int) -> None:
         if not self.student_repo.get_student_by_id(student_id):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,

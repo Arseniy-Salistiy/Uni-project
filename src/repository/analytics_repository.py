@@ -75,5 +75,40 @@ class AnalyticsRepository:
             cur.execute(query)
             return cur.fetchall()
 
+    def get_academic_stats(self, by_type: str) -> List[Dict[str, Any]]:
+        if by_type == 'Группа':
+            query = """SELECT gr.name as category_name, COALESCE(ROUND(AVG(g.grade), 2), 0.0)::FLOAT as avg_grade
+                       FROM groups gr JOIN students s ON s.group_id = gr.id JOIN grades g ON g.student_id = s.user_id AND g.is_final = TRUE
+                       GROUP BY gr.id, gr.name ORDER BY avg_grade DESC;"""
+        elif by_type == 'Курс':
+            query = """SELECT gr.year::TEXT as category_name, COALESCE(ROUND(AVG(g.grade), 2), 0.0)::FLOAT as avg_grade
+                       FROM groups gr JOIN students s ON s.group_id = gr.id JOIN grades g ON g.student_id = s.user_id AND g.is_final = TRUE
+                       GROUP BY gr.year ORDER BY category_name;"""
+        elif by_type == 'Специальность':
+            query = """SELECT m.name as category_name, COALESCE(ROUND(AVG(g.grade), 2), 0.0)::FLOAT as avg_grade
+                       FROM majors m JOIN groups gr ON gr.major_id = m.id JOIN students s ON s.group_id = gr.id JOIN grades g ON g.student_id = s.user_id AND g.is_final = TRUE
+                       GROUP BY m.id, m.name ORDER BY avg_grade DESC;"""
+        with self.conn.cursor() as cur:
+            cur.execute(query)
+            return cur.fetchall()
+
+    def get_quality_of_knowledge_report(self) -> List[Dict[str, Any]]:
+        query = """WITH student_min_grades AS (
+                        SELECT s.user_id, s.group_id, MIN(g.grade) as min_grade
+                        FROM students s
+                        JOIN grades g ON g.student_id = s.user_id AND g.is_final = TRUE
+                        GROUP BY s.user_id, s.group_id
+                    )
+                    SELECT 
+                        gr.name as group_name,
+                        ROUND(COUNT(CASE WHEN smg.min_grade >= 3.5 THEN 1 END) * 100.0 / NULLIF(COUNT(smg.user_id), 0), 2)::FLOAT as quality_percentage
+                    FROM groups gr
+                    LEFT JOIN student_min_grades smg ON gr.id = smg.group_id
+                    GROUP BY gr.id, gr.name
+                    ORDER BY quality_percentage DESC NULLS LAST;"""
+        with self.conn.cursor() as cur:
+            cur.execute(query)
+            return cur.fetchall()
+
 def get_analytics_repo(conn=Depends(get_db)) -> AnalyticsRepository:
     return AnalyticsRepository(conn)

@@ -43,3 +43,8 @@ class ControlForm(str, Enum):
     TEST = "зачёт"
     TERM_PAPER = "курсовая"
     GRADED_TEST = "дифференцированный зачёт"
+
+class Type(str, Enum):
+    GROUP = "Группа"
+    COURSE = "Курс"
+    MAJOR = "Специальность"
