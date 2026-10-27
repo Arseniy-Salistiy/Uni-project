@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Университетская система</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;800&display=swap" rel="stylesheet">
+<script>tailwind.config={theme:{extend:{colors:{ink:'#16213a',moss:'#0f6b5c',paper:'#f3f4f0'}}}}</script>
+<style>
+body{font-family:Manrope,system-ui,sans-serif;background:#f3f4f0;color:#16213a}
+.inp{width:100%;border:1px solid #cfd4dc;border-radius:.5rem;padding:.5rem .75rem;background:#fff;font-size:.9rem}
+.inp:focus,.btn:focus-visible,.nav:focus-visible{outline:2px solid #0f6b5c;outline-offset:1px}
+.btn{background:#0f6b5c;color:#fff;border-radius:.5rem;padding:.5rem 1rem;font-weight:600;font-size:.9rem}
+.btn:hover{background:#0b5547}.btn.sec{background:#e6e9ee;color:#16213a}.btn.dng{background:#b42318}
+.lbl{display:block;font-size:.8rem;font-weight:600;margin-bottom:.25rem;color:#4a5570}
+table{width:100%;font-size:.9rem}th{text-align:left;padding:.5rem .75rem;background:#e9ecf1;font-weight:600}
+td{padding:.5rem .75rem;border-top:1px solid #e3e6ec}
+.nav{display:block;width:100%;text-align:left;padding:.6rem .9rem;border-radius:.5rem;color:#c9d2e6}
+.nav:hover{background:#243357}.nav.on{background:#0f6b5c;color:#fff}
+.box{background:#fff;border:1px solid #e0e4ea;border-radius:.75rem;padding:1.1rem}
+</style>
+</head>
+<body>
+<div id="toasts" class="fixed top-4 right-4 z-50 space-y-2 w-80 max-w-[90vw]"></div>
+
+<!-- AUTH -->
+<section id="auth" class="min-h-screen flex items-center justify-center p-4">
+  <div class="box w-full max-w-lg">
+    <h1 class="text-2xl font-extrabold mb-1">Университетская система</h1>
+    <div class="flex gap-2 my-4">
+      <button class="btn" id="tabIn" onclick="authTab('in')">Вход</button>
+      <button class="btn sec" id="tabUp" onclick="authTab('up')">Регистрация</button>
+    </div>
+    <form id="fIn" class="space-y-3" onsubmit="doLogin(event)">
+      <div><label class="lbl">Email</label><input class="inp" name="username" type="email" required autocomplete="username"></div>
+      <div><label class="lbl">Пароль</label><input class="inp" name="password" type="password" required autocomplete="current-password"></div>
+      <button class="btn w-full">Войти</button>
+    </form>
+    <form id="fUp" class="space-y-3 hidden" onsubmit="doSignup(event)"></form>
+  </div>
+</section>
+
+<!-- APP -->
+<section id="app" class="hidden min-h-screen md:flex">
+  <header class="md:hidden bg-ink text-white p-3 flex items-center justify-between">
+    <b id="mTitle">Меню</b><button class="btn sec" onclick="document.getElementById('side').classList.toggle('hidden')">☰</button>
+  </header>
+  <aside id="side" class="hidden md:flex md:flex-col w-full md:w-64 bg-ink text-white p-4 md:min-h-screen shrink-0">
+    <div class="mb-5"><div id="uName" class="font-extrabold"></div><div id="uRole" class="text-sm text-slate-300"></div></div>
+    <nav id="nav" class="space-y-1 flex-1"></nav>
+    <button class="nav mt-4" onclick="logout()">Выйти</button>
+  </aside>
+  <main class="flex-1 p-4 md:p-8 min-w-0"><h2 id="vTitle" class="text-xl font-extrabold mb-4"></h2><div id="view"></div></main>
+</section>
+
+<script>
+const API_BASE_URL = 'http://localhost:8000';
+
+/* ---------- state & helpers ---------- */
+const S = { token: sessionStorage.getItem('tk'), user: null, role: null, D: {roles:[],deps:[],majors:[],groups:[],subjects:[]} };
+const $ = id => document.getElementById(id);
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fio = o => o.fio || o.student_fio || o.teacher_fio || [o.last_name,o.first_name,o.middle_name].filter(Boolean).join(' ') || o.email || '—';
+const nm = o => o.name || o.title || o.group_name || o.department_name || o.subject_name || o.role_name || Object.values(o).find(v => typeof v === 'string') || '—';
+const ENUM = {
+  lessonType:['лекция','семинар','лабораторная','практика'], status:['присутствовал','отсутствовал','опоздал','уважительная причина'],
+  asType:['лабораторная','контрольная','курсовая','реферат','проект'], funding:['бюджет','платное'], stStatus:['числится','академический отпуск','отчислен','выпустился'],
+  statsBy:['Группа','Курс','Специальность']
+};
+
+function toast(msg, kind='err') {
+  const el = document.createElement('div');
+  const c = kind==='ok' ? 'bg-emerald-50 border-emerald-600 text-emerald-900' : 'bg-red-50 border-red-600 text-red-900';
+  el.className = `border-l-4 rounded p-3 shadow text-sm ${c}`; el.textContent = msg;
+  $('toasts').appendChild(el); setTimeout(() => el.remove(), 5000);
+}
+function detailMsg(d) {
+  if (!d) return ''; if (typeof d === 'string') return d;
+  if (Array.isArray(d)) return d.map(x => (x.loc ? x.loc.slice(1).join('.') + ': ' : '') + (x.msg || '')).join('; ');
+  return d.message || JSON.stringify(d);
+}
+async function api(path, { method='GET', json, form, query, quiet } = {}) {
+  let url = API_BASE_URL + path;
+  if (query) { const q = new URLSearchParams(Object.entries(query).filter(([,v]) => v !== '' && v != null)); if ([...q].length) url += '?' + q; }
+  const headers = {}; let body;
+  if (S.token) headers.Authorization = 'Bearer ' + S.token;
+  if (json !== undefined) { headers['Content-Type'] = 'application/json'; body = JSON.stringify(json); }
+  if (form) body = new URLSearchParams(form);
+  let res;
+  try { res = await fetch(url, { method, headers, body }); }
+  catch { if (!quiet) toast('Нет связи с сервером. Проверьте адрес бэкенда и CORS.'); throw new Error('network'); }
+  let data = null; const txt = await res.text(); try { data = txt ? JSON.parse(txt) : null; } catch { data = txt; }
+  if (!res.ok) {
+    if (!quiet) {
+      if (res.status === 401) { if (S.user) { toast('Сессия истекла. Войдите снова.'); logout(true); } else toast('Неверный email или пароль.'); }
+      else if (res.status === 403) toast('Недостаточно прав для этого действия.');
+      else if (res.status >= 500) toast('Ошибка сервера. Попробуйте позже.');
+      else toast(detailMsg(data?.detail) || 'Не удалось выполнить запрос.');
+    }
+    throw new Error(res.status);
+  }
+  return data;
+}
+const list = d => Array.isArray(d) ? d : (d?.items || d?.data || d?.results || d?.logs || []);
+const opts = (arr, sel) => arr.map(o => `<option value="${esc(o.v ?? o.id ?? o)}" ${String(sel)===String(o.v ?? o.id ?? o)?'selected':''}>${esc(o.t ?? o.name ?? o)}</option>`).join('');
+const field = (label, inner) => `<div><label class="lbl">${label}</label>${inner}</div>`;
+const sel = (name, arr, ph, extra='') => `<select class="inp" name="${name}" required ${extra}><option value="">${ph||'Выберите…'}</option>${opts(arr)}</select>`;
+const tbl = (head, rows) => rows.length ? `<div class="overflow-x-auto box !p-0"><table><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : `<div class="box text-slate-500">Пока нет данных.</div>`;
+const fd = f => Object.fromEntries([...new FormData(f)].map(([k,v]) => [k, v]));
+const num = (o, ...ks) => { ks.forEach(k => { if (o[k] !== undefined && o[k] !== '') o[k] = Number(o[k]); }); return o; };
+const ok = m => toast(m || 'Сохранено', 'ok');
+
+/* ---------- dictionaries ---------- */
+async function loadDicts() {
+  const get = async p => { try { return list(await api(p, { quiet: true })); } catch { return []; } };
+  const [roles, deps, majors, subj, grp] = await Promise.all([get('/info/roles'), get('/info/departments'), get('/info/majors'), get('/info/subjects'), get('/info/groups')]);
+  const m = a => a.map(o => ({ id: o.id ?? o.role_id ?? o.department_id ?? o.major_id, name: nm(o) }));
+  S.D.roles = m(roles); S.D.deps = m(deps); S.D.majors = m(majors); S.D.subjects = m(subj);
+  S.D.groups = grp.map(o => ({ id: o.id ?? o.group_id, name: nm(o) }));
+  if (!S.D.groups.length) { // фолбэк: берём группы из списка студентов
+    try { const st = list(await api('/students/', { quiet: true })); const seen = {};
+      st.forEach(s => { if (s.group_id != null) seen[s.group_id] = s.group_name || (typeof s.group === 'string' ? s.group : s.group?.name) || ('Группа ' + s.group_id); });
+      S.D.groups = Object.entries(seen).map(([id, name]) => ({ id: Number(id), name })); } catch {}
+  }
+}
+const roleId = (rx, fb) => S.D.roles.find(r => rx.test(r.name))?.id ?? fb;
+function roleKind(id) {
+  const n = S.D.roles.find(r => r.id === id)?.name || '';
+  if (/студ/i.test(n)) return 'student'; if (/препод/i.test(n)) return 'teacher'; if (/декан/i.test(n)) return 'dean'; if (/админ/i.test(n)) return 'admin';
+  return ({1:'student',2:'teacher',3:'dean',4:'admin'})[id] || 'student';
+}
+const ROLE_RU = { student:'Студент', teacher:'Преподаватель', dean:'Декан', admin:'Администратор' };
+
+/* ---------- auth ---------- */
+function authTab(t) {
+  $('fIn').classList.toggle('hidden', t!=='in'); $('fUp').classList.toggle('hidden', t==='in');
+  $('tabIn').className = 'btn ' + (t==='in'?'':'sec'); $('tabUp').className = 'btn ' + (t==='up'?'':'sec');
+  if (t==='up') renderSignup();
+}
+async function renderSignup(fid='fUp') {
+  if (!S.D.roles.length && !S.D.deps.length) await loadDicts();
+  $(fid).innerHTML = `
+    <div class="flex gap-4 text-sm font-semibold"><label><input type="radio" name="kind" value="student" checked onchange="signKind()"> Студент</label>
+    <label><input type="radio" name="kind" value="teacher" onchange="signKind()"> Преподаватель</label></div>
+    <div class="grid sm:grid-cols-3 gap-3">${field('Фамилия','<input class="inp" name="last_name" required>')}${field('Имя','<input class="inp" name="first_name" required>')}${field('Отчество','<input class="inp" name="middle_name" required>')}</div>
+    <div class="grid sm:grid-cols-2 gap-3">${field('Email','<input class="inp" type="email" name="email" required>')}${field('Телефон','<input class="inp" type="tel" name="phone" required>')}</div>
+    ${field('Пароль','<input class="inp" type="password" name="password" minlength="6" required>')}
+    <div id="kS" class="space-y-3">
+      <div class="grid sm:grid-cols-2 gap-3">${field('Группа', sel('group_id', S.D.groups))}${field('Форма обучения', sel('funding_type', ENUM.funding))}</div>
+      <div class="grid sm:grid-cols-3 gap-3">${field('Дата рождения','<input class="inp" type="date" name="date_of_birth" required>')}${field('Дата зачисления','<input class="inp" type="date" name="enrollment_date" required>')}
+      ${field('Пол','<div class="flex gap-4 pt-2"><label><input type="radio" name="gender" value="М" checked> М</label><label><input type="radio" name="gender" value="Ж"> Ж</label></div>')}</div>
+    </div>
+    <div id="kT" class="hidden grid sm:grid-cols-3 gap-3">${field('Кафедра', sel('department_id', S.D.deps, 'Выберите…', 'disabled'))}
+      ${field('Должность','<input class="inp" name="position" disabled required>')}${field('Учёная степень','<input class="inp" name="degree" disabled required>')}</div>
+    <button class="btn w-full">Зарегистрироваться</button>`;
+}
+function signKind() {
+  const t = document.querySelector('[name=kind]:checked').value === 'teacher';
+  $('kS').classList.toggle('hidden', t); $('kT').classList.toggle('hidden', !t);
+  $('kS').querySelectorAll('input,select').forEach(e => e.disabled = t); $('kT').querySelectorAll('input,select').forEach(e => e.disabled = !t);
+}
+async function doSignup(e) {
+  e.preventDefault(); const d = fd(e.target); const teacher = d.kind === 'teacher'; delete d.kind;
+  d.role_id = teacher ? roleId(/препод/i, 2) : roleId(/студ/i, 1);
+  num(d, 'group_id', 'department_id');
+  try { await api(teacher ? '/teachers/signup' : '/students/signup', { method: 'POST', json: d }); ok('Аккаунт создан. Теперь войдите.'); authTab('in'); } catch {}
+}
+async function doLogin(e) {
+  e.preventDefault(); const f = fd(e.target);
+  try {
+    const r = await api('/users/login', { method: 'POST', form: { username: f.username, password: f.password } });
+    S.token = r.access_token || r.token; if (!S.token) return toast('Сервер не вернул токен.');
+    sessionStorage.setItem('tk', S.token); e.target.reset(); await boot();
+  } catch {}
+}
+function logout(silent) { S.token = null; S.user = null; sessionStorage.removeItem('tk'); $('app').classList.add('hidden'); $('auth').classList.remove('hidden'); authTab('in'); }
+async function boot() {
+  try { await loadDicts(); S.user = await api('/users/me'); } catch { return logout(true); }
+  S.role = roleKind(S.user.role_id);
+  if (S.role === 'student') { try { const st = await api('/students/' + S.user.id, { quiet: true }); S.user.group_id = st.group_id ?? st.group?.id; } catch {} }
+  $('auth').classList.add('hidden'); $('app').classList.remove('hidden'); $('fUp').innerHTML = '';
+  $('uName').textContent = fio(S.user); $('uRole').textContent = ROLE_RU[S.role];
+  const menu = MENUS[S.role];
+  $('nav').innerHTML = menu.map(([k, t]) => `<button class="nav" data-k="${k}" onclick="go('${k}')">${t}</button>`).join('');
+  go(menu[0][0]);
+}
+function go(k) {
+  document.querySelectorAll('#nav .nav').forEach(b => b.classList.toggle('on', b.dataset.k === k));
+  const t = [].concat(...Object.values(MENUS)).find(m => m[0] === k)?.[1] || ''; $('vTitle').textContent = t; $('mTitle').textContent = t;
+  if (innerWidth < 768) $('side').classList.add('hidden');
+  $('view').innerHTML = '<div class="text-slate-500">Загрузка…</div>'; PAGES[k]().catch(() => {});
+}
+
+/* ---------- reusable: group → course picker ---------- */
+let CA = [];
+const caLabel = c => `${c.subject} · ${c.teacher} · ${c.term} сем., ${c.academic_year}`;
+function picker(onCourse, needCourse = true) {
+  $('view').insertAdjacentHTML('afterbegin', `<div class="box grid sm:grid-cols-2 gap-3 mb-4">${field('Группа', `<select id="pG" class="inp"><option value="">Выберите группу…</option>${opts(S.D.groups)}</select>`)}
+    ${needCourse ? field('Дисциплина', '<select id="pC" class="inp"><option value="">Сначала выберите группу</option></select>') : ''}</div><div id="out"></div>`);
+  $('pG').onchange = async () => {
+    if (!$('pG').value) return; $('out').innerHTML = '';
+    if (!needCourse) return onCourse(+$('pG').value);
+    try { CA = await api(`/study/group/${$('pG').value}/course/assignments`); } catch { return; }
+    $('pC').innerHTML = `<option value="">Выберите дисциплину…</option>` + CA.map(c => `<option value="${c.id}">${esc(caLabel(c))}</option>`).join('');
+  };
+  if (needCourse) $('pC').onchange = () => $('pC').value && onCourse(+$('pC').value, +$('pG').value);
+  if (!S.D.groups.length) toast('Список групп недоступен: нет справочника групп на бэкенде.');
+}
+async function del(path, after) { if (!confirm('Удалить запись?')) return; try { await api(path, { method: 'DELETE' }); ok('Удалено'); after(); } catch {} }
+
+/* ---------- pages ---------- */
+const MENUS = {
+  student: [['sSched','Расписание'],['sGrades','Успеваемость'],['sAtt','Посещаемость'],['profile','Профиль']],
+  teacher: [['tLessons','Занятия'],['tAtt','Посещаемость'],['tAssign','Задания'],['tGrade','Оценки'],['profile','Профиль']],
+  dean: [['dAn','Аналитика'],['courses','Назначения курсов'],['people','Студенты и преподаватели'],['profile','Профиль']],
+  admin: [['aUsers','Пользователи и роли'],['aNew','Создать аккаунт'],['courses','Назначения курсов'],['aLogs','Журнал событий'],['aBackup','Резервная копия'],['profile','Профиль']]
+};
+const rangeBar = id => `<div class="box flex flex-wrap gap-3 items-end mb-4">${field('С','<input id="d1" type="date" class="inp">')}${field('По','<input id="d2" type="date" class="inp">')}<button class="btn" id="${id}">Показать</button></div>`;
+const PAGES = {
+  async profile() {
+    const u = S.user;
+    $('view').innerHTML = `<form class="box max-w-xl space-y-3" id="pf"><div class="grid sm:grid-cols-3 gap-3">${field('Фамилия',`<input class="inp" name="last_name" value="${esc(u.last_name)}">`)}${field('Имя',`<input class="inp" name="first_name" value="${esc(u.first_name)}">`)}${field('Отчество',`<input class="inp" name="middle_name" value="${esc(u.middle_name)}">`)}</div>
+      ${field('Email',`<input class="inp" type="email" name="email" value="${esc(u.email)}">`)}${field('Телефон',`<input class="inp" name="phone" value="${esc(u.phone)}">`)}
+      ${field('Новый пароль (необязательно)','<input class="inp" type="password" name="password" minlength="6">')}<button class="btn">Сохранить</button></form>`;
+    $('pf').onsubmit = async e => { e.preventDefault(); const d = fd(e.target); if (!d.password) delete d.password;
+      try { Object.assign(S.user, await api('/users/me', { method: 'PATCH', json: d })); $('uName').textContent = fio(S.user); ok(); } catch {} };
+  },
+  async sSched() {
+    $('view').innerHTML = rangeBar('go') + '<div id="out"></div>';
+    const run = async () => { if (!S.user.group_id) return $('out').innerHTML = '<div class="box text-slate-500">Ваша группа не определена.</div>';
+      try { const r = await api(`/study/lessons/groups/${S.user.group_id}`, { query: { start_date: $('d1').value, end_date: $('d2').value } });
+        $('out').innerHTML = tbl(['Дата','Время','Дисциплина','Тип','Преподаватель','Аудитория'], r.map(l => [l.lesson_date, `${l.start_time.slice(0,5)}–${l.end_time.slice(0,5)}`, esc(l.subject), esc(l.lesson_type), esc(l.teacher), esc(l.room)])); } catch {} };
+    $('go').onclick = run; run();
+  },
+  async sGrades() {
+    try { const [sum, gpa] = await Promise.all([api(`/analytics/reports/student-summary/${S.user.id}`), api(`/performace/students/${S.user.id}/gpa`, { quiet: true }).catch(() => null)]);
+      $('view').innerHTML = (gpa ? `<div class="box mb-4 inline-block"><span class="text-sm text-slate-500">Средний балл</span><div class="text-3xl font-extrabold">${Number(gpa.gpa).toFixed(2)}</div></div>` : '') +
+        tbl(['Дисциплина','Семестр','Учебный год','Форма контроля','Оценка'], sum.map(r => [esc(r.subject_name), r.term, esc(r.academic_year), esc(r.control_form), `<b>${r.grade}</b>`])); } catch {}
+  },
+  async sAtt() {
+    try { const r = await api('/study/attendance', { query: { student_id: S.user.id } });
+      const c = {}; r.forEach(a => c[a.status] = (c[a.status] || 0) + 1);
+      $('view').innerHTML = `<div class="flex flex-wrap gap-3 mb-4">${ENUM.status.map(s => `<div class="box"><div class="text-sm text-slate-500">${s}</div><div class="text-2xl font-extrabold">${c[s] || 0}</div></div>`).join('')}</div>`; } catch {}
+  },
+  async tLessons() {
+    picker(async (ca, g) => {
+      const load = async () => { try { const r = (await api(`/study/lessons/groups/${g}`)).filter(l => { const c = CA.find(x => x.id === ca); return !c || l.subject === c.subject; });
+        $('ls').innerHTML = tbl(['Дата','Время','Тип','Аудитория',''], r.map(l => [l.lesson_date, `${l.start_time.slice(0,5)}–${l.end_time.slice(0,5)}`, esc(l.lesson_type), esc(l.room), `<button class="btn dng" onclick="del('/study/lessons/${l.id}',()=>$('pC').onchange())">Удалить</button>`])); } catch {} };
+      $('out').innerHTML = `<form id="lf" class="box grid sm:grid-cols-3 gap-3 mb-4">${field('Тип',sel('lesson_type',ENUM.lessonType))}${field('Дата','<input class="inp" type="date" name="lesson_date" required>')}${field('Аудитория','<input class="inp" name="room" required>')}
+        ${field('Начало','<input class="inp" type="time" name="start_time" value="09:00" required>')}${field('Конец','<input class="inp" type="time" name="end_time" value="10:30" required>')}<div class="flex items-end"><button class="btn w-full">Добавить занятие</button></div></form><div id="ls"></div>`;
+      $('lf').onsubmit = async e => { e.preventDefault(); const d = fd(e.target); d.course_assignment_id = ca; d.start_time += ':00'; d.end_time += ':00';
+        try { await api('/study/lessons', { method: 'POST', json: d }); ok('Занятие добавлено'); load(); } catch {} };
+      load();
+    });
+  },
+  async tAtt() {
+    picker(async (ca, g) => {
+      let lessons, studs;
+      try { lessons = await api(`/study/lessons/groups/${g}`); studs = list(await api('/students/')).filter(s => s.group_id == g); } catch { return; }
+      const c = CA.find(x => x.id === ca); lessons = lessons.filter(l => !c || l.subject === c.subject);
+      $('out').innerHTML = `<form id="af" class="box space-y-3">${field('Занятие',sel('lesson', lessons.map(l => ({ v: l.id, t: `${l.lesson_date} ${l.start_time.slice(0,5)} · ${l.lesson_type}` }))))}
+        ${studs.length ? tbl(['Студент','Статус'], studs.map(s => [esc(fio(s)), `<select class="inp" data-sid="${s.id ?? s.user_id ?? s.student_id}">${opts(ENUM.status)}</select>`])) : '<div class="text-slate-500">В группе не найдено студентов.</div>'}<button class="btn">Сохранить посещаемость</button></form>`;
+      $('af').onsubmit = async e => { e.preventDefault(); const lid = +$('af').lesson.value; let n = 0;
+        for (const s of $('af').querySelectorAll('[data-sid]')) { try { await api('/study/attendance', { method: 'POST', json: { lesson_id: lid, student_id: +s.dataset.sid, status: s.value } }); n++; } catch { break; } }
+        if (n) ok(`Отмечено студентов: ${n}`); };
+    });
+  },
+  async tAssign() {
+    picker(async ca => {
+      const load = async () => { try { const r = await api(`/performace/assignments/course/${ca}`);
+        $('al').innerHTML = tbl(['Название','Тип','Коэфф.','Макс. балл',''], r.map(a => [esc(a.title), esc(a.type), a.coefficient, a.max_grade, `<button class="btn dng" onclick="del('/performace/assignments/${a.id}',()=>$('pC').onchange())">Удалить</button>`])); } catch {} };
+      $('out').innerHTML = `<form id="cf" class="box grid sm:grid-cols-4 gap-3 mb-4">${field('Название','<input class="inp" name="title" required>')}${field('Тип',sel('type',ENUM.asType))}${field('Коэффициент','<input class="inp" type="number" step="0.1" min="0" name="coefficient" value="1">')}${field('Макс. балл','<input class="inp" type="number" min="1" name="max_grade" value="5">')}
+        <div class="sm:col-span-4"><button class="btn">Создать задание</button></div></form><div id="al"></div>`;
+      $('cf').onsubmit = async e => { e.preventDefault(); const d = num(fd(e.target), 'max_grade'); d.course_assignment_id = ca;
+        try { await api('/performace/assignments', { method: 'POST', json: d }); ok('Задание создано'); load(); } catch {} };
+      load();
+    });
+  },
+  async tGrade() {
+    picker(async (ca, g) => {
+      let as, studs; try { as = await api(`/performace/assignments/course/${ca}`); studs = list(await api('/students/')).filter(s => s.group_id == g); } catch { return; }
+      $('out').innerHTML = `<form id="gf" class="box grid sm:grid-cols-3 gap-3">${field('Студент',sel('student_id',studs.map(s => ({ v: s.id ?? s.user_id ?? s.student_id, t: fio(s) }))))}
+        ${field('Задание',sel('assignment_id',as.map(a => ({ v: a.id, t: `${a.title} (${a.type})` }))))}${field('Оценка',sel('grade',[5,4,3,2,1].map(n => ({ v: n, t: n }))))}
+        <label class="text-sm font-semibold sm:col-span-2"><input type="checkbox" name="is_final"> Итоговая оценка по дисциплине</label><button class="btn">Поставить оценку</button></form>`;
+      $('gf').onsubmit = async e => { e.preventDefault(); const f = e.target; const d = { student_id: +f.student_id.value, assignment_id: +f.assignment_id.value, grade: +f.grade.value, is_final: f.is_final.checked, course_assignment_id: ca, submission_id: null };
+        try { await api('/performace/grades', { method: 'POST', json: d }); ok('Оценка выставлена'); } catch {} };
+    });
+  },
+  async dAn() {
+    $('view').innerHTML = `<div class="grid lg:grid-cols-2 gap-4"><div class="box"><h3 class="font-bold mb-2">Должники</h3><div id="r1"></div></div><div class="box"><h3 class="font-bold mb-2">Качество знаний по группам</h3><div id="r2"></div></div>
+      <div class="box"><h3 class="font-bold mb-2">Успеваемость</h3>${sel('by', ENUM.statsBy, 'Выберите разрез…')}<div id="r3" class="mt-3"></div></div>
+      <div class="box"><h3 class="font-bold mb-2">Рейтинг группы</h3><select id="rg" class="inp"><option value="">Выберите группу…</option>${opts(S.D.groups)}</select><div id="r4" class="mt-3"></div></div></div>`;
+    const t = (a, h, f) => a.length ? tbl(h, a.map(f)) : '<div class="text-slate-500">Нет данных.</div>';
+    api('/analytics/reports/debtors').then(r => $('r1').innerHTML = t(r, ['Студент','Группа','Дисциплина','Оценка'], x => [esc(x.student_fio), esc(x.group_name), esc(x.subject_name), x.grade])).catch(() => {});
+    api('/analytics/reports/quality-of-knowledge').then(r => $('r2').innerHTML = t(r, ['Группа','Качество, %'], x => [esc(x.group_name), Number(x.quality_percentage).toFixed(1)])).catch(() => {});
+    document.querySelector('[name=by]').onchange = e => e.target.value && api('/analytics/reports/stats/' + encodeURIComponent(e.target.value)).then(r => $('r3').innerHTML = t(r, ['Категория','Средний балл'], x => [esc(x.category_name), Number(x.avg_grade).toFixed(2)])).catch(() => {});
+    $('rg').onchange = e => e.target.value && api('/analytics/reports/group-rating/' + e.target.value).then(r => $('r4').innerHTML = t(r, ['Место','Студент','Средний балл'], x => [x.rank, esc(x.student_fio), Number(x.avg_grade).toFixed(2)])).catch(() => {});
+  },
+  async courses() {
+    let teachers = []; try { teachers = list(await api('/teachers/')).map(t => ({ v: t.id ?? t.user_id ?? t.teacher_id, t: fio(t) })); } catch {}
+    picker(async g => {
+      const load = async () => { try { const r = await api(`/study/group/${g}/course/assignments`); CA = r;
+        $('cl').innerHTML = tbl(['Дисциплина','Преподаватель','Семестр','Учебный год',''], r.map(c => [esc(c.subject), esc(c.teacher), c.term, esc(c.academic_year), `<button class="btn dng" onclick="del('/study/course/assignments/${c.id}',()=>$('pG').onchange())">Удалить</button>`])); } catch {} };
+      $('out').innerHTML = `<form id="cf" class="box grid sm:grid-cols-4 gap-3 mb-4">${field('Дисциплина',sel('subject_id',S.D.subjects,'Выберите дисциплину…'))}${field('Преподаватель',sel('teacher_id',teachers))}
+        ${field('Семестр',sel('term',[1,2,3,4,5,6,7,8].map(n => ({ v: n, t: n }))))}${field('Учебный год','<select class="inp" name="academic_year">'+['2024/2025','2025/2026','2026/2027'].map(y => `<option ${y==='2026/2027'?'selected':''}>${y}</option>`).join('')+'</select>')}
+        <div class="sm:col-span-4"><button class="btn">Назначить курс</button></div></form><div id="cl"></div>`;
+      if (!S.D.subjects.length) toast('Справочник дисциплин не найден на бэкенде — выбор предмета недоступен.');
+      $('cf').onsubmit = async e => { e.preventDefault(); const d = num(fd(e.target), 'subject_id', 'teacher_id', 'term'); d.group_id = g;
+        try { await api('/study/course/assignments', { method: 'POST', json: d }); ok('Курс назначен'); load(); } catch {} };
+      load();
+    }, false);
+  },
+  async people() {
+    try { const [st, tc] = await Promise.all([api('/students/'), api('/teachers/')]);
+      $('view').innerHTML = `<h3 class="font-bold mb-2">Студенты</h3>${tbl(['ФИО','Email','Группа','Статус'], list(st).map(s => [esc(fio(s)), esc(s.email), esc(s.group_name || s.group?.name || s.group || ''), esc(s.status || '')]))}
+        <h3 class="font-bold mt-6 mb-2">Преподаватели</h3>${tbl(['ФИО','Email','Должность','Степень'], list(tc).map(s => [esc(fio(s)), esc(s.email), esc(s.position || ''), esc(s.degree || '')]))}`; } catch {}
+  },
+  async aUsers() {
+    try { const [st, tc] = await Promise.all([api('/students/'), api('/teachers/')]);
+      const all = [...list(st), ...list(tc)].map(u => ({ id: u.user_id ?? u.id, fio: fio(u), email: u.email, role: u.role_id }));
+      $('view').innerHTML = tbl(['ФИО','Email','Роль',''], all.map(u => [esc(u.fio), esc(u.email), `<select class="inp" id="r${u.id}">${opts(S.D.roles.map(r => ({ v: r.id, t: r.name })), u.role)}</select>`, `<button class="btn" onclick="setRole(${u.id})">Сохранить</button>`])); } catch {}
+  },
+  async aNew() { $('view').innerHTML = '<form id="fAdm" class="box max-w-2xl space-y-3"></form>'; await renderSignup('fAdm'); $('fAdm').onsubmit = doSignupAdmin; },
+  async aLogs() {
+    let page = 1; const run = async () => { try { const r = await api('/admin/logs', { query: { page, per_page: 10 } }); const rows = list(r);
+      $('view').innerHTML = (rows.length ? tbl(Object.keys(rows[0]).filter(k => !/(^|_)id$/.test(k)).map(esc), rows.map(x => Object.keys(rows[0]).filter(k => !/(^|_)id$/.test(k)).map(k => esc(typeof x[k] === 'object' ? JSON.stringify(x[k]) : x[k])))) : '<div class="box text-slate-500">Записей нет.</div>') +
+        `<div class="flex gap-2 mt-4 items-center"><button class="btn sec" ${page<2?'disabled':''} id="pp">Назад</button><span>Страница ${page}</span><button class="btn sec" id="pn" ${rows.length<10?'disabled':''}>Вперёд</button></div>`;
+      $('pp').onclick = () => { page--; run(); }; $('pn').onclick = () => { page++; run(); }; } catch {} }; run();
+  },
+  async aBackup() {
+    $('view').innerHTML = '<div class="box max-w-md"><p class="mb-3 text-sm">Создаст резервную копию базы данных.</p><button class="btn" id="bk">Создать копию</button></div>';
+    $('bk').onclick = async () => { try { const r = await api('/admin/backup', { method: 'POST' }); ok(r.message || 'Резервное копирование запущено'); } catch {} };
+  }
+};
+async function setRole(id) { try { await api('/admin/roles/' + id, { method: 'PATCH', json: +$('r' + id).value }); ok('Роль изменена'); } catch {} }
+async function doSignupAdmin(e) { // админ создаёт аккаунт и остаётся в системе
+  e.preventDefault(); const d = fd(e.target); const teacher = d.kind === 'teacher'; delete d.kind;
+  d.role_id = teacher ? roleId(/препод/i, 2) : roleId(/студ/i, 1); num(d, 'group_id', 'department_id');
+  try { await api(teacher ? '/teachers/signup' : '/students/signup', { method: 'POST', json: d }); ok('Аккаунт создан'); e.target.reset(); } catch {}
+}
+
+/* ---------- start ---------- */
+authTab('in');
+if (S.token) boot();
+</script>
+</body>
+</html>

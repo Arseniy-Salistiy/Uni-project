@@ -52,10 +52,10 @@ class Type(str, Enum):
     MAJOR = "Специальность"
 
 class UserRole(int, Enum):
-    ADMIN = settings.ADMIN
-    DEAN = settings.DEAN
-    TEACHER = settings.TEACHER
-    STUDENT = settings.STUDENT
+    ADMIN = int(settings.ADMIN)
+    DEAN = int(settings.DEAN)
+    TEACHER = int(settings.TEACHER)
+    STUDENT = int(settings.STUDENT)
 
     @property
     def get_role(self):

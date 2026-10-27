@@ -22,6 +22,12 @@ cp .env.example .env
 docker compose up --build -d
 ```
 
+### 3. Запуск фронтенда
+После того как подняли Docker нужно запустить сервер в терминале в корне проекта командой:
+```bash
+python -m http.server 5500
+```
+
 После этого:
 * **API бэкенда** будет доступно по адресу: `http://localhost:8000`
 * **Интерактивная документация (Swagger)**: `http://localhost:8000/docs`

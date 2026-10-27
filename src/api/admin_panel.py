@@ -35,5 +35,3 @@ def assign_roles(user_id: int, new_role: int = Body(ge=1, le=4),
 @router.post('/accounts')
 def manage_accs():
     pass
-
-#backup router
