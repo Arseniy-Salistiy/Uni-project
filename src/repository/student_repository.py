@@ -23,12 +23,12 @@ class StudentRepository:
     def get_all_students(self) -> List[Dict[str, Any]]:
         query = """ SELECT
                      u.id, u.first_name, u.middle_name, u.last_name,
-                     u.email, u.phone, s.gender, s.funding_type, s.status,
-                     g.name
+                     u.email, u.phone, u.role_id, s.gender, s.funding_type, s.status,
+                     s.group_id, g.name as group_name
                     FROM users as u
                     JOIN students as s ON s.user_id = u.id
                     JOIN groups as g ON g.id = s.group_id
-                    ORDER BY 2, 4
+                    ORDER BY u.last_name, u.first_name
         """
 
         with self.conn.cursor() as cur:
@@ -39,7 +39,7 @@ class StudentRepository:
         query = """SELECT
                     u.id, u.first_name, u.last_name, u.middle_name,
                     u.email, u.phone, s.date_of_birth, s.gender,
-                    g.name as group_name, s.funding_type, s.status
+                    s.group_id, g.name as group_name, s.funding_type, s.status
                    FROM users as u
                    JOIN students as s ON s.user_id = u.id
                    JOIN groups as g ON g.id = s.group_id

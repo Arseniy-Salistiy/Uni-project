@@ -40,7 +40,8 @@ class LessonsRepository:
         JOIN subjects s ON ca.subject_id = s.id
         JOIN teachers t ON ca.teacher_id = t.user_id
         JOIN users u ON t.user_id = u.id
-        WHERE ca.group_id = %s AND l.lesson_date BETWEEN %s AND %s"""
+        WHERE ca.group_id = %s AND l.lesson_date BETWEEN %s AND %s
+        ORDER BY l.lesson_date, l.start_time"""
 
         with self.conn.cursor() as cur:
             cur.execute(query, (group_id, lesson_date.start_date,
@@ -65,6 +66,16 @@ class LessonsRepository:
         JOIN teachers t ON ca.teacher_id = t.user_id
         JOIN users u ON t.user_id = u.id
         WHERE l.id = %s"""
+
+        with self.conn.cursor() as cur:
+            cur.execute(query, (lesson_id,))
+            return cur.fetchone()
+
+    def get_lesson_course(self, lesson_id: int) -> None | Dict[str, Any]:
+        query = """SELECT l.course_assignment_id, ca.teacher_id, ca.group_id
+                    FROM lessons l
+                    JOIN course_assignments ca ON ca.id = l.course_assignment_id
+                    WHERE l.id = %s"""
 
         with self.conn.cursor() as cur:
             cur.execute(query, (lesson_id,))

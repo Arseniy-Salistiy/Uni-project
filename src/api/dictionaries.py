@@ -28,8 +28,7 @@ def get_majors(major_repo: MajorRepository = Depends(get_major_repo),
     return major_repo.get_all_majors()
 
 @router.get('/groups', response_model=List[InfoItem])
-def get_groups(group_repo: GroupRepository = Depends(get_group_repo),
-                role_check: bool = Depends(Roles([settings.DEAN, settings.ADMIN, settings.STUDENT, settings.TEACHER]))):
+def get_groups(group_repo: GroupRepository = Depends(get_group_repo)):
     return group_repo.get_all_groups()
 
 @router.get('/subjects', response_model=List[InfoItem])

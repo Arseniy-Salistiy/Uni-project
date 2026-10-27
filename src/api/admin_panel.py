@@ -1,8 +1,11 @@
 from fastapi import APIRouter, Depends, Query, Body, BackgroundTasks, status
+from typing import List
 
 from src.services.admin_panel_service import AdminPanelService, get_admin_panel_service
 from src.core.roles import Roles
 from src.schemas.admin_panel_schemas import *
+from src.schemas.user_schemas import User, UserWithRole
+from src.core.auth import get_user
 from src.core.config import settings
 
 router = APIRouter(prefix='/admin', tags=['admin panel'])
@@ -26,11 +29,17 @@ def get_logs_router(page: int = Query(default=1, ge=1),
                     service: AdminPanelService = Depends(get_admin_panel_service)):
     return service.get_logs(page, per_page)
 
-@router.patch('/roles/{user_id}')
-def assign_roles(user_id: int, new_role: int = Body(ge=1, le=4),
+@router.get('/users', response_model=List[UserWithRole])
+def get_users(role_check: bool = Depends(Roles([settings.ADMIN])),
+              service: AdminPanelService = Depends(get_admin_panel_service)):
+    return service.get_users()
+
+@router.patch('/roles/{user_id}', response_model=User)
+def assign_roles(user_id: int, new_role: int = Body(ge=1),
+                cur_user: User = Depends(get_user),
                 role_check: bool = Depends(Roles([settings.ADMIN])),
                 service: AdminPanelService = Depends(get_admin_panel_service)):
-    return service.assign_role(user_id, new_role)
+    return service.assign_role(user_id, new_role, dict(cur_user)['id'])
 
 @router.post('/accounts')
 def manage_accs():

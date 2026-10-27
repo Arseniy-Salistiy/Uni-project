@@ -1,0 +1,596 @@
+[
+  {
+    "id": "TC-01",
+    "title": "Вход с верными email и паролем",
+    "role": "admin",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-02",
+    "title": "Вход с неверным паролем",
+    "role": "гость",
+    "expected": 401,
+    "actual": 401,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-03",
+    "title": "Вход с несуществующим email",
+    "role": "гость",
+    "expected": 401,
+    "actual": 401,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-04",
+    "title": "Запрос профиля без токена",
+    "role": "гость",
+    "expected": 401,
+    "actual": 401,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-05",
+    "title": "Запрос с поддельным токеном",
+    "role": "гость",
+    "expected": 401,
+    "actual": 401,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-06",
+    "title": "Профиль /users/me возвращает роль «admin»",
+    "role": "admin",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-07",
+    "title": "Профиль /users/me возвращает роль «dean»",
+    "role": "dean",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-08",
+    "title": "Профиль /users/me возвращает роль «teacher»",
+    "role": "teacher",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-09",
+    "title": "Профиль /users/me возвращает роль «student»",
+    "role": "student",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-10",
+    "title": "Справочник групп доступен без входа (нужен для регистрации)",
+    "role": "гость",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-11",
+    "title": "Справочник ролей недоступен студенту",
+    "role": "student",
+    "expected": 403,
+    "actual": 403,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-12",
+    "title": "Регистрация студента; переданный role_id=1 игнорируется",
+    "role": "гость",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": "выдана роль 4"
+  },
+  {
+    "id": "TC-13",
+    "title": "Повторная регистрация с тем же email",
+    "role": "гость",
+    "expected": 409,
+    "actual": 409,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-14",
+    "title": "Регистрация с некорректным телефоном",
+    "role": "гость",
+    "expected": 422,
+    "actual": 422,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-15",
+    "title": "Регистрация в несуществующую группу",
+    "role": "гость",
+    "expected": 404,
+    "actual": 404,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-16",
+    "title": "Регистрация с паролем короче 6 символов",
+    "role": "гость",
+    "expected": 422,
+    "actual": 422,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-17",
+    "title": "Регистрация преподавателя без входа запрещена",
+    "role": "гость",
+    "expected": 401,
+    "actual": 401,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-18",
+    "title": "Студент не может создать преподавателя",
+    "role": "student",
+    "expected": 403,
+    "actual": 403,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-19",
+    "title": "Администратор создаёт аккаунт преподавателя",
+    "role": "admin",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-20",
+    "title": "Администратор видит список всех пользователей с ролями",
+    "role": "admin",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-21",
+    "title": "Декан не видит панель пользователей",
+    "role": "dean",
+    "expected": 403,
+    "actual": 403,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-22",
+    "title": "Администратор повышает преподавателя до декана",
+    "role": "admin",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-23",
+    "title": "Нельзя сделать студентом пользователя без карточки студента",
+    "role": "admin",
+    "expected": 409,
+    "actual": 409,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-24",
+    "title": "Нельзя изменить роль администратору",
+    "role": "admin",
+    "expected": 403,
+    "actual": 403,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-25",
+    "title": "Назначение несуществующей роли",
+    "role": "admin",
+    "expected": 422,
+    "actual": 422,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-26",
+    "title": "Декан не может менять роли",
+    "role": "dean",
+    "expected": 403,
+    "actual": 403,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-27",
+    "title": "Администратор просматривает журнал событий",
+    "role": "admin",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-28",
+    "title": "Студент не видит журнал событий",
+    "role": "student",
+    "expected": 403,
+    "actual": 403,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-29",
+    "title": "Администратор запускает резервное копирование",
+    "role": "admin",
+    "expected": 202,
+    "actual": 202,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-30",
+    "title": "Декан назначает дисциплину группе",
+    "role": "dean",
+    "expected": 201,
+    "actual": 201,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-31",
+    "title": "Повторное назначение той же дисциплины",
+    "role": "dean",
+    "expected": 409,
+    "actual": 409,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-32",
+    "title": "Преподаватель не может назначать дисциплины",
+    "role": "teacher",
+    "expected": 403,
+    "actual": 403,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-33",
+    "title": "Декан формирует отчёт по должникам",
+    "role": "dean",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-34",
+    "title": "Преподаватель не видит отчёт по должникам",
+    "role": "teacher",
+    "expected": 403,
+    "actual": 403,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-35",
+    "title": "Декан смотрит статистику успеваемости по группам",
+    "role": "dean",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-36",
+    "title": "Преподаватель создаёт занятие по своей дисциплине",
+    "role": "teacher",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-37",
+    "title": "Преподаватель не может создать занятие по чужой дисциплине",
+    "role": "teacher",
+    "expected": 403,
+    "actual": 403,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-38",
+    "title": "Занятие с окончанием раньше начала",
+    "role": "teacher",
+    "expected": 422,
+    "actual": 422,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-39",
+    "title": "Студент не может создавать занятия",
+    "role": "student",
+    "expected": 403,
+    "actual": 403,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-66",
+    "title": "Изменение занятия с пустым телом запроса",
+    "role": "teacher",
+    "expected": 400,
+    "actual": 400,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-40",
+    "title": "Преподаватель отмечает посещаемость студента своей группы",
+    "role": "teacher",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-41",
+    "title": "Повторная отметка того же студента на том же занятии",
+    "role": "teacher",
+    "expected": 409,
+    "actual": 409,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-42",
+    "title": "Отметка студента из другой группы",
+    "role": "teacher",
+    "expected": 400,
+    "actual": 400,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-43",
+    "title": "Преподаватель создаёт задание по своей дисциплине",
+    "role": "teacher",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-44",
+    "title": "Преподаватель не может создать задание по чужой дисциплине",
+    "role": "teacher",
+    "expected": 403,
+    "actual": 403,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-45",
+    "title": "Студент не может удалить задание",
+    "role": "student",
+    "expected": 403,
+    "actual": 403,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-46",
+    "title": "Получение задания по id",
+    "role": "student",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-47",
+    "title": "Преподаватель выставляет оценку за задание",
+    "role": "teacher",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-48",
+    "title": "Повторная оценка за то же задание",
+    "role": "teacher",
+    "expected": 409,
+    "actual": 409,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-49",
+    "title": "Оценка вне шкалы (6)",
+    "role": "teacher",
+    "expected": 422,
+    "actual": 422,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-50",
+    "title": "Оценка по чужой дисциплине",
+    "role": "teacher",
+    "expected": 403,
+    "actual": 403,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-51",
+    "title": "Декан не выставляет оценки (только преподаватель дисциплины)",
+    "role": "dean",
+    "expected": 403,
+    "actual": 403,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-52",
+    "title": "Преподаватель удаляет своё задание",
+    "role": "teacher",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-53",
+    "title": "Преподаватель удаляет своё занятие",
+    "role": "teacher",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-54",
+    "title": "Студент получает свою карточку с группой",
+    "role": "student",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-55",
+    "title": "Студент не видит карточку другого студента",
+    "role": "student",
+    "expected": 403,
+    "actual": 403,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-56",
+    "title": "Студент видит расписание своей группы за период",
+    "role": "student",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-57",
+    "title": "Студент видит свою сводную ведомость",
+    "role": "student",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-58",
+    "title": "Студент не видит чужую ведомость",
+    "role": "student",
+    "expected": 403,
+    "actual": 403,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-59",
+    "title": "Студент видит свой средний балл",
+    "role": "student",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-60",
+    "title": "Студент видит свою посещаемость",
+    "role": "student",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-61",
+    "title": "Студент не видит чужую посещаемость",
+    "role": "student",
+    "expected": 403,
+    "actual": 403,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-62",
+    "title": "Студент не видит общий список студентов",
+    "role": "student",
+    "expected": 403,
+    "actual": 403,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-63",
+    "title": "Декан редактирует свой профиль",
+    "role": "dean",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-64",
+    "title": "Студент меняет телефон в профиле",
+    "role": "student",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "id": "TC-65",
+    "title": "Профиль: email меняется, токен остаётся рабочим",
+    "role": "student",
+    "expected": 200,
+    "actual": 200,
+    "status": "PASS",
+    "note": ""
+  }
+]

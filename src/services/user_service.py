@@ -21,16 +21,20 @@ class UserService:
 
     def signup_student(self, schema: CreateStudent):
         self.validate_email_phone(schema.email, schema.phone)
+        if not self.group_repo.get_group_by_id(schema.group_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Группа не найдена')
 
-        new_user = self.user_repo.create_user(schema)
+        new_user = self.user_repo.create_user(schema, settings.STUDENT)
         self.student_repo.create_student(new_user['id'], schema)
 
         return new_user
 
     def signup_teacher(self, schema: CreateTeacher):
         self.validate_email_phone(schema.email, schema.phone)
+        if not self.department_repo.get_department_by_id(schema.department_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Кафедра не найдена')
 
-        new_user = self.user_repo.create_user(schema)
+        new_user = self.user_repo.create_user(schema, settings.TEACHER)
         self.teacher_repo.create_teacher(new_user['id'], schema)
 
         return new_user
@@ -56,13 +60,24 @@ class UserService:
         return teacher
 
     def patch_teacher_info(self, teacher_id: int, payload: TeacherPatch):
+        self.fetch_teacher_by_id(teacher_id)
         return self.teacher_repo.update_teacher_info(teacher_id, payload)
 
     def patch_student_info(self, student_id: int, payload: StudentPatch):
+        if not self.student_repo.get_student_by_id(student_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Такого студента нет')
         return self.student_repo.update_student_info(student_id, payload)
 
     def patch_user_info(self, user_id: int, payload: UserPatch):
-        return self.user_repo.change_profile_info(user_id, payload)
+        if payload.email:
+            other = self.user_repo.get_by_email(payload.email)
+            if other and other['id'] != user_id:
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Email уже занят')
+        if payload.phone:
+            other = self.user_repo.get_by_phone(payload.phone)
+            if other and other['id'] != user_id:
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Номер телефона уже занят')
+        return self.user_repo.change_profile_info(user_id, payload) or self.user_repo.get_user_by_id(user_id)
 
     def fetch_user(self, email: str):
         user = self.user_repo.get_by_email(email)

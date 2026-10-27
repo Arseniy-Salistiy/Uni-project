@@ -10,19 +10,20 @@ router = APIRouter(prefix='/teachers', tags=['teachers'])
 
 @router.get('/')
 def get_all_teachers(teacher_repo: TeacherRepository = Depends(get_teacher_repo),
-                    role_check: bool = Depends(Roles([settings.DEAN, settings.TEACHER, settings.STUDENT]))):
+                    role_check: bool = Depends(Roles([settings.ADMIN, settings.DEAN, settings.TEACHER, settings.STUDENT]))):
     return teacher_repo.get_all_teachers()
 
 @router.post('/signup', response_model=User)
-def signup_teacher(credentials: CreateTeacher, service: UserService = Depends(get_user_service)):
+def signup_teacher(credentials: CreateTeacher, service: UserService = Depends(get_user_service),
+                    role_check: bool = Depends(Roles([settings.ADMIN]))):
     return service.signup_teacher(credentials)
 
 @router.get('/{id}')
 def get_teacher_by_id(id: int, service: UserService = Depends(get_user_service),
-                        role_check: bool = Depends(Roles([settings.DEAN, settings.TEACHER, settings.STUDENT]))):
+                        role_check: bool = Depends(Roles([settings.ADMIN, settings.DEAN, settings.TEACHER, settings.STUDENT]))):
     return service.fetch_teacher_by_id(id)
 
-@router.patch('/{id}/info')
+@router.patch('/{teacher_id}/info')
 def change_teacher_info(teacher_id: int, payload: TeacherPatch,
                         role_check: bool = Depends(Roles([settings.ADMIN, settings.DEAN])),
                         service: UserService = Depends(get_user_service)):

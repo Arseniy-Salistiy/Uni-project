@@ -12,8 +12,7 @@ class CreateUser(BaseModel):
     middle_name: str
     email: EmailStr
     phone: str = Field(pattern=r"^(\+7|8)[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$")
-    password: str
-    role_id: int
+    password: str = Field(min_length=6)
 
 class CreateTeacher(CreateUser):
     department_id: int
@@ -32,9 +31,21 @@ class User(BaseModel):
     first_name: str
     last_name: str
     middle_name: str
-    phone: str = Field(pattern=r"^(\+7|8)[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$")
-    email: EmailStr
+    phone: str | None
+    email: str | None
     role_id: int
+
+class UserMe(User):
+    role: str
+
+class UserWithRole(BaseModel):
+    id: int
+    first_name: str
+    last_name: str
+    middle_name: str
+    email: str | None
+    role_id: int
+    role_name: str
 
 class LoginResponse(BaseModel):
     access_token: str
@@ -70,7 +81,7 @@ class UserPatch(BaseModel):
     middle_name: str|None = Field(default=None, examples=[None])
     email: EmailStr|None = Field(default=None, examples=[None])
     phone: str|None = Field(default=None, examples=[None], pattern=r"^(\+7|8)[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$")
-    password: str|None = Field(default=None, examples=[None])
+    password: str|None = Field(default=None, examples=[None], min_length=6)
 
 class InfoItem(BaseModel):
     id: int

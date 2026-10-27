@@ -1,5 +1,5 @@
 -- =====================================================================
--- Тестовые данные (DML). Запускается при старте приложения.
+-- Тестовые данные (DML). Запускается вручную после старта приложения (см. README).
 -- Идемпотентен: если данные уже есть (roles/users не пусты) - ничего не делает.
 -- Таблицы submissions и attachments не затрагиваются.
 --
@@ -7,7 +7,7 @@
 --        10 преподавателей, 5 групп, 30 студентов, 15 дисциплин,
 --        30 назначений дисциплин, 240 занятий, ~1300 записей посещаемости,
 --        90 заданий, ~670 оценок.
--- Пароль всех тестовых пользователей: password123 (bcrypt, см. ниже).
+-- Пароль всех тестовых пользователей: password123 (argon2id, как в приложении).
 -- =====================================================================
 
 ALTER TABLE ROLES DISABLE TRIGGER ALL;
@@ -36,15 +36,10 @@ BEGIN
   END IF;
 
   -- ---------------------------------------------------------------
-  -- Пароль: bcrypt через pgcrypto ($2a$ совместим со Spring BCrypt).
-  -- Если расширение недоступно - подставьте готовый bcrypt-хеш вместо заглушки.
+  -- Пароль: argon2id-хеш строки password123 (pwdlib PasswordHash.recommended()).
+  -- bcrypt из pgcrypto приложение не проверяет, поэтому хеш готовый.
   -- ---------------------------------------------------------------
-  BEGIN
-    CREATE EXTENSION IF NOT EXISTS pgcrypto;
-    v_pwd := crypt('password123', gen_salt('bf', 10));
-  EXCEPTION WHEN OTHERS THEN
-    v_pwd := 'REPLACE_WITH_BCRYPT_HASH';
-  END;
+  v_pwd := '$argon2id$v=19$m=65536,t=3,p=4$emrtPMO6jhdWSzyaK7xQTQ$Fg5ip6tpFwU19Zx9MPbXEBBZH0syVYdc4gMend/P4Ms';
 
   -- ---------------------------------------------------------------
   -- ROLES: admin=1, dean=2, teacher=3, student=4
@@ -79,8 +74,8 @@ BEGIN
   -- USERS: admin и dean
   -- ---------------------------------------------------------------
   INSERT INTO users (first_name, last_name, middle_name, email, phone, password, role_id) VALUES
-    ('Игорь',   'Петров',  'Васильевич',   'admin@university.test', '9200000001', v_pwd, 1),
-    ('Николай', 'Фёдоров', 'Александрович','dean@university.test',  '9200000002', v_pwd, 2);
+    ('Игорь',   'Петров',  'Васильевич',   'admin@university.test', '+79200000001', v_pwd, 1),
+    ('Николай', 'Фёдоров', 'Александрович','dean@university.test',  '+79200000002', v_pwd, 2);
 
   -- ---------------------------------------------------------------
   -- Преподаватели (10)
@@ -104,7 +99,7 @@ BEGIN
 
   INSERT INTO users (first_name, last_name, middle_name, email, phone, password, role_id)
   SELECT first_name, last_name, middle_name, email,
-         '91000000' || lpad(n::text, 2, '0'), v_pwd, 3
+         '+791000000' || lpad(n::text, 2, '0'), v_pwd, 3
   FROM tmp_teachers
   ORDER BY n;
 
@@ -163,7 +158,7 @@ BEGIN
   INSERT INTO users (first_name, last_name, middle_name, email, phone, password, role_id)
   SELECT first_name, last_name, middle_name,
          's' || lpad(n::text, 2, '0') || '@student.university.test',
-         '93000000' || lpad(n::text, 2, '0'),
+         '+793000000' || lpad(n::text, 2, '0'),
          v_pwd, 4
   FROM tmp_students
   ORDER BY n;

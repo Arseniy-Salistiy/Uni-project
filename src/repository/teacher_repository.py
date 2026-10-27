@@ -23,7 +23,7 @@ class TeacherRepository:
         query = """SELECT 
                     u.id, u.first_name, u.last_name, 
                     u.middle_name, u.email, u.phone, 
-                    d.name, t.position, t.degree
+                    d.name as department_name, t.position, t.degree
                    FROM users as u
                    JOIN teachers as t ON t.user_id = u.id
                    JOIN departments as d ON d.id = t.department_id
@@ -36,11 +36,11 @@ class TeacherRepository:
     def get_all_teachers(self) -> List[Dict[str, Any]]:
         query = """ SELECT
                      u.id, u.first_name, u.middle_name, u.last_name,
-                     u.email, u.phone, t.position, t.degree, d.name
+                     u.email, u.phone, u.role_id, t.position, t.degree, d.name as department_name
                     FROM users as u
                     JOIN teachers as t ON t.user_id = u.id
                     JOIN departments as d ON d.id = t.department_id
-                    ORDER BY 2, 4
+                    ORDER BY u.last_name, u.first_name
         """
 
         with self.conn.cursor() as cur:

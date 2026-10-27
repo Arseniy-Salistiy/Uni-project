@@ -1,7 +1,7 @@
 import psycopg2
 from fastapi import Depends
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 from src.schemas.user_schemas import CreateUser, UserPatch
 from src.core.auth import hash_password
@@ -46,7 +46,7 @@ class UserRepository:
             cur.execute(query, (*data.values(), user_id,))
             return cur.fetchone()
 
-    def create_user(self, credentials: CreateUser) -> Dict[str, Any]:
+    def create_user(self, credentials: CreateUser, role_id: int) -> Dict[str, Any]:
         query = """
         INSERT INTO users (first_name, last_name, middle_name, email, phone, password, role_id)
         VALUES(%s, %s, %s, %s, %s, %s, %s)
@@ -61,7 +61,7 @@ class UserRepository:
                             credentials.email,
                             credentials.phone,
                             hash_password(credentials.password),
-                            credentials.role_id))
+                            role_id))
             return cur.fetchone()
 
     def get_user_by_id(self, id: int) -> None | Dict[str, Any]:
@@ -70,6 +70,17 @@ class UserRepository:
         with self.conn.cursor() as cur:
             cur.execute(query, (id,))
             return cur.fetchone()
+
+    def get_all_users(self) -> List[Dict[str, Any]]:
+        query = """SELECT u.id, u.first_name, u.last_name, u.middle_name,
+                          u.email, u.role_id, r.name as role_name
+                   FROM users as u
+                   JOIN roles as r ON r.id = u.role_id
+                   ORDER BY u.role_id, u.last_name, u.first_name"""
+
+        with self.conn.cursor() as cur:
+            cur.execute(query)
+            return cur.fetchall()
 
 def get_user_repo(conn=Depends(get_db)) -> UserRepository:
     return UserRepository(conn)

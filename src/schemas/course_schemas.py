@@ -14,6 +14,7 @@ class CourseAssignmentGet(BaseModel):
     id: int
     group: str
     subject: str
+    teacher_id: int
     teacher: str
     term: int
     academic_year: str
