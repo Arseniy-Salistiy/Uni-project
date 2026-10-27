@@ -23,8 +23,8 @@ def verify_password(password: str, hashed_password: str) -> bool:
     try:
         return password_hash.verify(password, hashed_password)
     except Exception:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail='Неверный пароль')
+        logger.warning("не удалось проверить хеш пароля")
+        return False
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
@@ -45,10 +45,10 @@ def get_user(token: str = Depends(oauth2_scheme),
         settings.SECRET_KEY, 
         algorithms=[settings.ALGORITHM])
 
-        email: str|None = payload.get('sub')
+        user_id: int|None = payload.get('id')
 
-        if email is None:
-            logger.debug("нет email")
+        if user_id is None:
+            logger.debug("нет id")
             raise credentials_exception
 
     except jwt.ExpiredSignatureError:
@@ -65,10 +65,10 @@ def get_user(token: str = Depends(oauth2_scheme),
                 middle_name, phone, email, 
                 role_id 
                FROM users 
-               WHERE email = %s"""
+               WHERE id = %s"""
 
     with db.cursor() as cur:
-        cur.execute(query, (email,))
+        cur.execute(query, (user_id,))
         user = cur.fetchone()
         
     if user is None:

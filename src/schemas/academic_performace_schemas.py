@@ -23,10 +23,10 @@ class Assignmnet(BaseModel):
 class CreateGrade(BaseModel):
     student_id: int
     course_assignment_id: int
-    assignment_id: None | int
+    assignment_id: None | int = None
     grade: int = Field(default=5, ge=0, le=5)
-    graded_at: datetime = Field(default=datetime.now())
-    submission_id: None | int
+    graded_at: datetime = Field(default_factory=datetime.now)
+    submission_id: None | int = None
     is_final: None | bool = Field(default=False)
 
 class Grade(CreateGrade):

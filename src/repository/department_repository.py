@@ -15,5 +15,12 @@ class DepartmentRepository:
             cur.execute(query)
             return cur.fetchall()
 
+    def get_department_by_id(self, id: int) -> None | Dict[str, Any]:
+        query = """SELECT id, name FROM departments WHERE id = %s"""
+
+        with self.conn.cursor() as cur:
+            cur.execute(query, (id,))
+            return cur.fetchone()
+
 def get_department_repo(conn=Depends(get_db)) -> DepartmentRepository:
     return DepartmentRepository(conn)

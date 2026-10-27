@@ -3,12 +3,17 @@ from typing import List, Dict, Any
 
 from src.repository.admin_panel_repository import AdminPanelRepository, get_admin_panel_repo
 from src.repository.user_repository import UserRepository, get_user_repo
+from src.repository.student_repository import StudentRepository
+from src.repository.teacher_repository import TeacherRepository
+from src.core.config import settings
 from src.db.database import get_db
 
 class AdminPanelService:
     def __init__(self, conn):
         self.admin_repo = AdminPanelRepository(conn)
         self.user_repo = UserRepository(conn)
+        self.student_repo = StudentRepository(conn)
+        self.teacher_repo = TeacherRepository(conn)
 
     def create_backup(self, background_tasks: BackgroundTasks) -> dict:
         background_tasks.add_task(self.admin_repo.create_backup)
@@ -20,16 +25,28 @@ class AdminPanelService:
     def get_logs(self, page: int, per_page: int) -> List[Dict[str, Any]]:
         offset = (page - 1) * per_page
         return self.admin_repo.get_logs(offset, per_page)
+
+    def get_users(self) -> List[Dict[str, Any]]:
+        return self.user_repo.get_all_users()
     
-    def assign_role(self, id: int, new_role: int) -> Dict[str, Any]:
+    def assign_role(self, id: int, new_role: int, by_user: int) -> Dict[str, Any]:
         user = self.user_repo.get_user_by_id(id)
         if not user:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail='Пользователь не найден')
-        if user.get('role_id') == 1:
+        if new_role not in (settings.ADMIN, settings.DEAN, settings.TEACHER, settings.STUDENT):
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                                detail='Такой роли нет')
+        if user.get('role_id') == settings.ADMIN:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail='нельзя изменить роль админу')
-        return self.admin_repo.assign_role(id, new_role)
+        if new_role == settings.STUDENT and not self.student_repo.get_student_by_id(id):
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                                detail='Нет карточки студента: создайте аккаунт студента через регистрацию')
+        if new_role == settings.TEACHER and not self.teacher_repo.get_teacher_by_id(id):
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                                detail='Нет карточки преподавателя: создайте аккаунт преподавателя')
+        return self.admin_repo.assign_role(id, new_role, by_user)
 
     def _check_user_id(self, id: int) -> None:
         if not self.user_repo.get_user_by_id(id):

@@ -11,7 +11,7 @@ class AcademicPerofrmaceRepository:
 
     def get_all_assignments_group(self, course_assignment_id: int) -> List[Dict[str, Any]]:
         query = """SELECT  
-                        a.id, a.title, a.type, g.name as group, 
+                        a.id, a.course_assignment_id, a.title, a.type, g.name as group, 
                         s.name as subject, a.coefficient, a.max_grade
                     FROM assignments a
                     JOIN course_assignments as ca ON ca.id = a.course_assignment_id
@@ -26,7 +26,7 @@ class AcademicPerofrmaceRepository:
 
     def get_assignment_by_id(self, id: int) -> Dict[str, Any]:
         query = """SELECT  
-                        a.id, a.title, a.type, g.name as group, 
+                        a.id, a.course_assignment_id, a.title, a.type, g.name as group, 
                         s.name as subject, a.coefficient, a.max_grade
                     FROM assignments a
                     JOIN course_assignments as ca ON ca.id = a.course_assignment_id

@@ -124,13 +124,17 @@ async function loadDicts() {
       S.D.groups = Object.entries(seen).map(([id, name]) => ({ id: Number(id), name })); } catch {}
   }
 }
-const roleId = (rx, fb) => S.D.roles.find(r => rx.test(r.name))?.id ?? fb;
-function roleKind(id) {
-  const n = S.D.roles.find(r => r.id === id)?.name || '';
-  if (/студ/i.test(n)) return 'student'; if (/препод/i.test(n)) return 'teacher'; if (/декан/i.test(n)) return 'dean'; if (/админ/i.test(n)) return 'admin';
-  return ({1:'student',2:'teacher',3:'dean',4:'admin'})[id] || 'student';
+const ROLE_BY_ID = {1:'admin',2:'dean',3:'teacher',4:'student'};
+function roleKind(u) {
+  if (MENUS[u.role]) return u.role;
+  const n = S.D.roles.find(r => r.id === u.role_id)?.name || '';
+  if (/stud|студ/i.test(n)) return 'student'; if (/teach|препод/i.test(n)) return 'teacher'; if (/dean|декан/i.test(n)) return 'dean'; if (/admin|админ/i.test(n)) return 'admin';
+  return ROLE_BY_ID[u.role_id] || 'student';
 }
 const ROLE_RU = { student:'Студент', teacher:'Преподаватель', dean:'Декан', admin:'Администратор' };
+const roleRu = name => ROLE_RU[String(name || '').toLowerCase()] || name;
+const isoDay = shift => { const d = new Date(); d.setDate(d.getDate() + shift); return d.toISOString().slice(0, 10); };
+const wide = () => ({ start_date: isoDay(-365), end_date: isoDay(180) });
 
 /* ---------- auth ---------- */
 function authTab(t) {
@@ -138,16 +142,16 @@ function authTab(t) {
   $('tabIn').className = 'btn ' + (t==='in'?'':'sec'); $('tabUp').className = 'btn ' + (t==='up'?'':'sec');
   if (t==='up') renderSignup();
 }
-async function renderSignup(fid='fUp') {
-  if (!S.D.roles.length && !S.D.deps.length) await loadDicts();
+async function renderSignup(fid='fUp', withTeacher=false) {
+  if (!S.D.groups.length) await loadDicts();
   $(fid).innerHTML = `
-    <div class="flex gap-4 text-sm font-semibold"><label><input type="radio" name="kind" value="student" checked onchange="signKind()"> Студент</label>
-    <label><input type="radio" name="kind" value="teacher" onchange="signKind()"> Преподаватель</label></div>
+    ${withTeacher ? `<div class="flex gap-4 text-sm font-semibold"><label><input type="radio" name="kind" value="student" checked onchange="signKind()"> Студент</label>
+    <label><input type="radio" name="kind" value="teacher" onchange="signKind()"> Преподаватель</label></div>` : `<input type="hidden" name="kind" value="student"><p class="text-sm text-slate-500">Регистрация доступна студентам. Аккаунты преподавателей создаёт администратор.</p>`}
     <div class="grid sm:grid-cols-3 gap-3">${field('Фамилия','<input class="inp" name="last_name" required>')}${field('Имя','<input class="inp" name="first_name" required>')}${field('Отчество','<input class="inp" name="middle_name" required>')}</div>
     <div class="grid sm:grid-cols-2 gap-3">${field('Email','<input class="inp" type="email" name="email" required>')}${field('Телефон','<input class="inp" type="tel" name="phone" required>')}</div>
     ${field('Пароль','<input class="inp" type="password" name="password" minlength="6" required>')}
     <div id="kS" class="space-y-3">
-      <div class="grid sm:grid-cols-2 gap-3">${field('Группа', sel('group_id', S.D.groups))}${field('Форма обучения', sel('funding_type', ENUM.funding))}</div>
+      <div class="grid sm:grid-cols-2 gap-3">${field('Группа', sel('group_id', S.D.groups))}${field('Основа обучения', sel('funding_type', ENUM.funding))}</div>
       <div class="grid sm:grid-cols-3 gap-3">${field('Дата рождения','<input class="inp" type="date" name="date_of_birth" required>')}${field('Дата зачисления','<input class="inp" type="date" name="enrollment_date" required>')}
       ${field('Пол','<div class="flex gap-4 pt-2"><label><input type="radio" name="gender" value="М" checked> М</label><label><input type="radio" name="gender" value="Ж"> Ж</label></div>')}</div>
     </div>
@@ -156,15 +160,14 @@ async function renderSignup(fid='fUp') {
     <button class="btn w-full">Зарегистрироваться</button>`;
 }
 function signKind() {
-  const t = document.querySelector('[name=kind]:checked').value === 'teacher';
+  const t = document.querySelector('[name=kind]:checked')?.value === 'teacher';
   $('kS').classList.toggle('hidden', t); $('kT').classList.toggle('hidden', !t);
   $('kS').querySelectorAll('input,select').forEach(e => e.disabled = t); $('kT').querySelectorAll('input,select').forEach(e => e.disabled = !t);
 }
 async function doSignup(e) {
-  e.preventDefault(); const d = fd(e.target); const teacher = d.kind === 'teacher'; delete d.kind;
-  d.role_id = teacher ? roleId(/препод/i, 2) : roleId(/студ/i, 1);
-  num(d, 'group_id', 'department_id');
-  try { await api(teacher ? '/teachers/signup' : '/students/signup', { method: 'POST', json: d }); ok('Аккаунт создан. Теперь войдите.'); authTab('in'); } catch {}
+  e.preventDefault(); const d = fd(e.target); delete d.kind;
+  num(d, 'group_id');
+  try { await api('/students/signup', { method: 'POST', json: d }); ok('Аккаунт создан. Теперь войдите.'); authTab('in'); } catch {}
 }
 async function doLogin(e) {
   e.preventDefault(); const f = fd(e.target);
@@ -177,7 +180,7 @@ async function doLogin(e) {
 function logout(silent) { S.token = null; S.user = null; sessionStorage.removeItem('tk'); $('app').classList.add('hidden'); $('auth').classList.remove('hidden'); authTab('in'); }
 async function boot() {
   try { await loadDicts(); S.user = await api('/users/me'); } catch { return logout(true); }
-  S.role = roleKind(S.user.role_id);
+  S.role = roleKind(S.user);
   if (S.role === 'student') { try { const st = await api('/students/' + S.user.id, { quiet: true }); S.user.group_id = st.group_id ?? st.group?.id; } catch {} }
   $('auth').classList.add('hidden'); $('app').classList.remove('hidden'); $('fUp').innerHTML = '';
   $('uName').textContent = fio(S.user); $('uRole').textContent = ROLE_RU[S.role];
@@ -196,13 +199,14 @@ function go(k) {
 let CA = [];
 const caLabel = c => `${c.subject} · ${c.teacher} · ${c.term} сем., ${c.academic_year}`;
 function picker(onCourse, needCourse = true) {
-  $('view').insertAdjacentHTML('afterbegin', `<div class="box grid sm:grid-cols-2 gap-3 mb-4">${field('Группа', `<select id="pG" class="inp"><option value="">Выберите группу…</option>${opts(S.D.groups)}</select>`)}
+  $('view').innerHTML = (`<div class="box grid sm:grid-cols-2 gap-3 mb-4">${field('Группа', `<select id="pG" class="inp"><option value="">Выберите группу…</option>${opts(S.D.groups)}</select>`)}
     ${needCourse ? field('Дисциплина', '<select id="pC" class="inp"><option value="">Сначала выберите группу</option></select>') : ''}</div><div id="out"></div>`);
   $('pG').onchange = async () => {
     if (!$('pG').value) return; $('out').innerHTML = '';
     if (!needCourse) return onCourse(+$('pG').value);
-    try { CA = await api(`/study/group/${$('pG').value}/course/assignments`); } catch { return; }
-    $('pC').innerHTML = `<option value="">Выберите дисциплину…</option>` + CA.map(c => `<option value="${c.id}">${esc(caLabel(c))}</option>`).join('');
+    try { CA = await api(`/study/group/${$('pG').value}/course/assignments`); } catch { $('pC').innerHTML = '<option value="">Нет дисциплин</option>'; return; }
+    if (S.role === 'teacher') CA = CA.filter(c => c.teacher_id === S.user.id);
+    $('pC').innerHTML = (CA.length ? `<option value="">Выберите дисциплину…</option>` : '<option value="">Вы не ведёте дисциплин в этой группе</option>') + CA.map(c => `<option value="${c.id}">${esc(caLabel(c))}</option>`).join('');
   };
   if (needCourse) $('pC').onchange = () => $('pC').value && onCourse(+$('pC').value, +$('pG').value);
   if (!S.D.groups.length) toast('Список групп недоступен: нет справочника групп на бэкенде.');
@@ -216,7 +220,7 @@ const MENUS = {
   dean: [['dAn','Аналитика'],['courses','Назначения курсов'],['people','Студенты и преподаватели'],['profile','Профиль']],
   admin: [['aUsers','Пользователи и роли'],['aNew','Создать аккаунт'],['courses','Назначения курсов'],['aLogs','Журнал событий'],['aBackup','Резервная копия'],['profile','Профиль']]
 };
-const rangeBar = id => `<div class="box flex flex-wrap gap-3 items-end mb-4">${field('С','<input id="d1" type="date" class="inp">')}${field('По','<input id="d2" type="date" class="inp">')}<button class="btn" id="${id}">Показать</button></div>`;
+const rangeBar = id => `<div class="box flex flex-wrap gap-3 items-end mb-4">${field('С',`<input id="d1" type="date" class="inp" value="${wide().start_date}">`)}${field('По',`<input id="d2" type="date" class="inp" value="${wide().end_date}">`)}<button class="btn" id="${id}">Показать</button></div>`;
 const PAGES = {
   async profile() {
     const u = S.user;
@@ -224,6 +228,8 @@ const PAGES = {
       ${field('Email',`<input class="inp" type="email" name="email" value="${esc(u.email)}">`)}${field('Телефон',`<input class="inp" name="phone" value="${esc(u.phone)}">`)}
       ${field('Новый пароль (необязательно)','<input class="inp" type="password" name="password" minlength="6">')}<button class="btn">Сохранить</button></form>`;
     $('pf').onsubmit = async e => { e.preventDefault(); const d = fd(e.target); if (!d.password) delete d.password;
+      Object.keys(d).forEach(k => { if (k !== 'password' && d[k] === String(u[k] ?? '')) delete d[k]; });
+      if (!Object.keys(d).length) return ok('Изменений нет');
       try { Object.assign(S.user, await api('/users/me', { method: 'PATCH', json: d })); $('uName').textContent = fio(S.user); ok(); } catch {} };
   },
   async sSched() {
@@ -239,13 +245,15 @@ const PAGES = {
         tbl(['Дисциплина','Семестр','Учебный год','Форма контроля','Оценка'], sum.map(r => [esc(r.subject_name), r.term, esc(r.academic_year), esc(r.control_form), `<b>${r.grade}</b>`])); } catch {}
   },
   async sAtt() {
-    try { const r = await api('/study/attendance', { query: { student_id: S.user.id } });
+    $('view').innerHTML = rangeBar('go') + '<div id="out"></div>';
+    const run = async () => { try { const r = await api('/study/attendance', { query: { student_id: S.user.id, start_date: $('d1').value, end_date: $('d2').value } });
       const c = {}; r.forEach(a => c[a.status] = (c[a.status] || 0) + 1);
-      $('view').innerHTML = `<div class="flex flex-wrap gap-3 mb-4">${ENUM.status.map(s => `<div class="box"><div class="text-sm text-slate-500">${s}</div><div class="text-2xl font-extrabold">${c[s] || 0}</div></div>`).join('')}</div>`; } catch {}
+      $('out').innerHTML = `<div class="flex flex-wrap gap-3 mb-4">${ENUM.status.map(s => `<div class="box"><div class="text-sm text-slate-500">${s}</div><div class="text-2xl font-extrabold">${c[s] || 0}</div></div>`).join('')}</div>`; } catch {} };
+    $('go').onclick = run; run();
   },
   async tLessons() {
     picker(async (ca, g) => {
-      const load = async () => { try { const r = (await api(`/study/lessons/groups/${g}`)).filter(l => { const c = CA.find(x => x.id === ca); return !c || l.subject === c.subject; });
+      const load = async () => { try { const r = (await api(`/study/lessons/groups/${g}`, { query: wide() })).filter(l => { const c = CA.find(x => x.id === ca); return !c || l.subject === c.subject; });
         $('ls').innerHTML = tbl(['Дата','Время','Тип','Аудитория',''], r.map(l => [l.lesson_date, `${l.start_time.slice(0,5)}–${l.end_time.slice(0,5)}`, esc(l.lesson_type), esc(l.room), `<button class="btn dng" onclick="del('/study/lessons/${l.id}',()=>$('pC').onchange())">Удалить</button>`])); } catch {} };
       $('out').innerHTML = `<form id="lf" class="box grid sm:grid-cols-3 gap-3 mb-4">${field('Тип',sel('lesson_type',ENUM.lessonType))}${field('Дата','<input class="inp" type="date" name="lesson_date" required>')}${field('Аудитория','<input class="inp" name="room" required>')}
         ${field('Начало','<input class="inp" type="time" name="start_time" value="09:00" required>')}${field('Конец','<input class="inp" type="time" name="end_time" value="10:30" required>')}<div class="flex items-end"><button class="btn w-full">Добавить занятие</button></div></form><div id="ls"></div>`;
@@ -257,7 +265,7 @@ const PAGES = {
   async tAtt() {
     picker(async (ca, g) => {
       let lessons, studs;
-      try { lessons = await api(`/study/lessons/groups/${g}`); studs = list(await api('/students/')).filter(s => s.group_id == g); } catch { return; }
+      try { lessons = await api(`/study/lessons/groups/${g}`, { query: wide() }); studs = list(await api('/students/')).filter(s => s.group_id == g); } catch { return; }
       const c = CA.find(x => x.id === ca); lessons = lessons.filter(l => !c || l.subject === c.subject);
       $('out').innerHTML = `<form id="af" class="box space-y-3">${field('Занятие',sel('lesson', lessons.map(l => ({ v: l.id, t: `${l.lesson_date} ${l.start_time.slice(0,5)} · ${l.lesson_type}` }))))}
         ${studs.length ? tbl(['Студент','Статус'], studs.map(s => [esc(fio(s)), `<select class="inp" data-sid="${s.id ?? s.user_id ?? s.student_id}">${opts(ENUM.status)}</select>`])) : '<div class="text-slate-500">В группе не найдено студентов.</div>'}<button class="btn">Сохранить посещаемость</button></form>`;
@@ -270,7 +278,7 @@ const PAGES = {
     picker(async ca => {
       const load = async () => { try { const r = await api(`/performace/assignments/course/${ca}`);
         $('al').innerHTML = tbl(['Название','Тип','Коэфф.','Макс. балл',''], r.map(a => [esc(a.title), esc(a.type), a.coefficient, a.max_grade, `<button class="btn dng" onclick="del('/performace/assignments/${a.id}',()=>$('pC').onchange())">Удалить</button>`])); } catch {} };
-      $('out').innerHTML = `<form id="cf" class="box grid sm:grid-cols-4 gap-3 mb-4">${field('Название','<input class="inp" name="title" required>')}${field('Тип',sel('type',ENUM.asType))}${field('Коэффициент','<input class="inp" type="number" step="0.1" min="0" name="coefficient" value="1">')}${field('Макс. балл','<input class="inp" type="number" min="1" name="max_grade" value="5">')}
+      $('out').innerHTML = `<form id="cf" class="box grid sm:grid-cols-4 gap-3 mb-4">${field('Название','<input class="inp" name="title" required>')}${field('Тип',sel('type',ENUM.asType))}${field('Коэффициент','<input class="inp" type="number" step="0.1" min="1" name="coefficient" value="1">')}${field('Макс. балл','<input class="inp" type="number" min="1" name="max_grade" value="5">')}
         <div class="sm:col-span-4"><button class="btn">Создать задание</button></div></form><div id="al"></div>`;
       $('cf').onsubmit = async e => { e.preventDefault(); const d = num(fd(e.target), 'max_grade'); d.course_assignment_id = ca;
         try { await api('/performace/assignments', { method: 'POST', json: d }); ok('Задание создано'); load(); } catch {} };
@@ -317,14 +325,16 @@ const PAGES = {
         <h3 class="font-bold mt-6 mb-2">Преподаватели</h3>${tbl(['ФИО','Email','Должность','Степень'], list(tc).map(s => [esc(fio(s)), esc(s.email), esc(s.position || ''), esc(s.degree || '')]))}`; } catch {}
   },
   async aUsers() {
-    try { const [st, tc] = await Promise.all([api('/students/'), api('/teachers/')]);
-      const all = [...list(st), ...list(tc)].map(u => ({ id: u.user_id ?? u.id, fio: fio(u), email: u.email, role: u.role_id }));
-      $('view').innerHTML = tbl(['ФИО','Email','Роль',''], all.map(u => [esc(u.fio), esc(u.email), `<select class="inp" id="r${u.id}">${opts(S.D.roles.map(r => ({ v: r.id, t: r.name })), u.role)}</select>`, `<button class="btn" onclick="setRole(${u.id})">Сохранить</button>`])); } catch {}
+    try { const all = await api('/admin/users');
+      const roles = S.D.roles.map(r => ({ v: r.id, t: roleRu(r.name) }));
+      $('view').innerHTML = tbl(['ФИО','Email','Текущая роль','Новая роль',''], all.map(u => u.id === S.user.id || /admin/i.test(u.role_name)
+        ? [esc(fio(u)), esc(u.email), esc(roleRu(u.role_name)), '<span class="text-slate-400">—</span>', '']
+        : [esc(fio(u)), esc(u.email), esc(roleRu(u.role_name)), `<select class="inp" id="r${u.id}">${opts(roles, u.role_id)}</select>`, `<button class="btn" onclick="setRole(${u.id})">Сохранить</button>`])); } catch {}
   },
-  async aNew() { $('view').innerHTML = '<form id="fAdm" class="box max-w-2xl space-y-3"></form>'; await renderSignup('fAdm'); $('fAdm').onsubmit = doSignupAdmin; },
+  async aNew() { $('view').innerHTML = '<form id="fAdm" class="box max-w-2xl space-y-3"></form>'; await renderSignup('fAdm', true); $('fAdm').onsubmit = doSignupAdmin; },
   async aLogs() {
     let page = 1; const run = async () => { try { const r = await api('/admin/logs', { query: { page, per_page: 10 } }); const rows = list(r);
-      $('view').innerHTML = (rows.length ? tbl(Object.keys(rows[0]).filter(k => !/(^|_)id$/.test(k)).map(esc), rows.map(x => Object.keys(rows[0]).filter(k => !/(^|_)id$/.test(k)).map(k => esc(typeof x[k] === 'object' ? JSON.stringify(x[k]) : x[k])))) : '<div class="box text-slate-500">Записей нет.</div>') +
+      $('view').innerHTML = (rows.length ? tbl(['Время','Пользователь','Действие','Таблица','Запись','Изменения'], rows.map(x => [esc(String(x.created_at).replace('T',' ').slice(0,19)), x.user_id ?? '—', esc(ACT[x.action] || x.action), esc(x.table_name), x.record_id, `<span class="text-xs">${esc(logDiff(x))}</span>`])) : '<div class="box text-slate-500">Записей нет.</div>') +
         `<div class="flex gap-2 mt-4 items-center"><button class="btn sec" ${page<2?'disabled':''} id="pp">Назад</button><span>Страница ${page}</span><button class="btn sec" id="pn" ${rows.length<10?'disabled':''}>Вперёд</button></div>`;
       $('pp').onclick = () => { page--; run(); }; $('pn').onclick = () => { page++; run(); }; } catch {} }; run();
   },
@@ -333,11 +343,18 @@ const PAGES = {
     $('bk').onclick = async () => { try { const r = await api('/admin/backup', { method: 'POST' }); ok(r.message || 'Резервное копирование запущено'); } catch {} };
   }
 };
-async function setRole(id) { try { await api('/admin/roles/' + id, { method: 'PATCH', json: +$('r' + id).value }); ok('Роль изменена'); } catch {} }
+const ACT = { INSERT: 'создание', UPDATE: 'изменение', DELETE: 'удаление' };
+function logDiff(x) {
+  const o = x.old_values || {}, n = x.new_values || {};
+  if (x.action === 'UPDATE') return Object.keys(n).filter(k => JSON.stringify(o[k]) !== JSON.stringify(n[k])).map(k => `${k}: ${o[k] ?? '—'} → ${n[k] ?? '—'}`).join('; ') || 'без изменений';
+  const v = x.action === 'DELETE' ? o : n;
+  return Object.entries(v).filter(([k]) => k !== 'id').slice(0, 4).map(([k, val]) => `${k}: ${val}`).join('; ');
+}
+async function setRole(id) { try { await api('/admin/roles/' + id, { method: 'PATCH', json: +$('r' + id).value }); ok('Роль изменена'); PAGES.aUsers(); } catch {} }
 async function doSignupAdmin(e) { // админ создаёт аккаунт и остаётся в системе
   e.preventDefault(); const d = fd(e.target); const teacher = d.kind === 'teacher'; delete d.kind;
-  d.role_id = teacher ? roleId(/препод/i, 2) : roleId(/студ/i, 1); num(d, 'group_id', 'department_id');
-  try { await api(teacher ? '/teachers/signup' : '/students/signup', { method: 'POST', json: d }); ok('Аккаунт создан'); e.target.reset(); } catch {}
+  num(d, 'group_id', 'department_id');
+  try { await api(teacher ? '/teachers/signup' : '/students/signup', { method: 'POST', json: d }); ok('Аккаунт создан'); e.target.reset(); signKind(); } catch {}
 }
 
 /* ---------- start ---------- */

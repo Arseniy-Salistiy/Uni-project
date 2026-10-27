@@ -7,7 +7,7 @@ from src.schemas.enums import LessonType, LessonStatus
 class CreateLesson(BaseModel):
     course_assignment_id: int
     lesson_type: LessonType = Field(default=LessonType.LECTURE, examples=[LessonType.LECTURE])
-    lesson_date: date = Field(default=date.today(), examples=[date.today()])
+    lesson_date: date = Field(default_factory=date.today, examples=[date.today()])
     start_time: time = Field(default=time(9, 0, 0), examples=[time(9, 0, 0)])
     end_time: time = Field(default=time(10, 30, 0), examples=[time(10, 30, 0)])
     room: str
@@ -21,8 +21,8 @@ class CreateLesson(BaseModel):
         return self
 
 class LessonDate(BaseModel):
-    start_date: date = Field(default=date.today(), examples=[date.today()])
-    end_date: date = Field(default=date.today(), examples=[date.today()])
+    start_date: date = Field(default_factory=date.today, examples=[date.today()])
+    end_date: date = Field(default_factory=date.today, examples=[date.today()])
 
     @model_validator(mode='after')
     def extra_check(self):
@@ -74,8 +74,8 @@ class AttendancePatch(BaseModel):
 
 class AttendancePeriod(BaseModel):
     student_id: int
-    start_date: date = Field(default=date.today(), examples=[date.today()])
-    end_date: date = Field(default=date.today(), examples=[date.today()])
+    start_date: date = Field(default_factory=date.today, examples=[date.today()])
+    end_date: date = Field(default_factory=date.today, examples=[date.today()])
 
     @model_validator(mode='after')
     def date_check(self):

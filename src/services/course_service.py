@@ -45,6 +45,9 @@ class CourseAssignmentService:
         return res
 
     def patch_course_assignment(self, course_id: int, user_id: int, payload: CourseAssignmentPatch):
+        if not payload.model_dump(exclude_unset=True):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                                detail='Нет данных для обновления')
         self._check_course(course_id)
         return self.course_assignment_repo.update_course_assignment(course_id, user_id, payload)
 

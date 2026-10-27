@@ -45,17 +45,20 @@ class AdminPanelRepository:
         except subprocess.CalledProcessError as e:
             logger.error(f"Критический сбой фонового бэкапа. Ошибка утилиты pg_dump: {e.stderr}")
 
-    def assign_role(self, id: int, new_role: int) -> Dict[str, Any]:
+    def assign_role(self, id: int, new_role: int, by_user: int) -> Dict[str, Any]:
         query = """UPDATE users SET role_id = %s
                     WHERE id = %s
-                    RETURNING *"""
-        
+                    RETURNING id, first_name, last_name, middle_name, phone, email, role_id"""
+        for_log = "SET LOCAL app.current_user_id=%s;"
+
         with self.conn.cursor() as cur:
+            cur.execute(for_log, (by_user,))
             cur.execute(query, (new_role, id,))
             return cur.fetchone()
 
     def get_logs(self, offset: int, limit: int) -> List[Dict[str, Any]]:
         query = """SELECT * FROM audit_logs
+                    ORDER BY created_at DESC, id DESC
                     OFFSET %s LIMIT %s"""
         
         with self.conn.cursor() as cur:
