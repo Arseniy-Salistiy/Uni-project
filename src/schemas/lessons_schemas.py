@@ -51,6 +51,17 @@ class LessonPatch(BaseModel):
 class Lesson(CreateLesson):
     id: int
 
+class LessonGet(BaseModel):
+    id: int
+    group: str
+    subject: str
+    teacher: str
+    lesson_type: LessonType
+    lesson_date: date
+    start_time: time
+    end_time: time
+    room: str
+
 class CreateAttendance(BaseModel):
     lesson_id: int
     student_id: int

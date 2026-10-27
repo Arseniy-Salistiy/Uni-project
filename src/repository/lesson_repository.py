@@ -24,9 +24,23 @@ class LessonsRepository:
             return cur.fetchone()
 
     def get_lessons_by_group(self, group_id: int, lesson_date: LessonDate) -> List[Dict[str, Any]]:
-        query = """SELECT l.* FROM lessons as l
-                    JOIN course_assignments as ca ON l.course_assignment_id = ca.id
-                    WHERE ca.group_id=%s AND l.lesson_date BETWEEN %s AND %s"""
+        query = """SELECT 
+            l.id as id,
+            g.name as group,
+            s.name as subject,
+            CONCAT_WS(' ', u.first_name, u.middle_name, u.last_name) as teacher,
+            l.lesson_type as lesson_type,
+            l.lesson_date as lesson_date,
+            l.start_time as start_time,
+            l.end_time as end_time,
+            l.room as room
+        FROM lessons l
+        JOIN course_assignments ca ON l.course_assignment_id = ca.id
+        JOIN groups g ON ca.group_id = g.id
+        JOIN subjects s ON ca.subject_id = s.id
+        JOIN teachers t ON ca.teacher_id = t.user_id
+        JOIN users u ON t.user_id = u.id
+        WHERE ca.group_id = %s AND l.lesson_date BETWEEN %s AND %s"""
 
         with self.conn.cursor() as cur:
             cur.execute(query, (group_id, lesson_date.start_date,
@@ -34,7 +48,23 @@ class LessonsRepository:
             return cur.fetchall()
 
     def get_lesson_by_id(self, lesson_id: int) -> None | Dict[str, Any]:
-        query = """SELECT * FROM lessons WHERE id=%s"""
+        query = """SELECT 
+            l.id as id,
+            g.name as group,
+            s.name as subject,
+            CONCAT_WS(' ', u.first_name, u.middle_name, u.last_name) as teacher,
+            l.lesson_type as lesson_type,
+            l.lesson_date as lesson_date,
+            l.start_time as start_time,
+            l.end_time as end_time,
+            l.room as room
+        FROM lessons l
+        JOIN course_assignments ca ON l.course_assignment_id = ca.id
+        JOIN groups g ON ca.group_id = g.id
+        JOIN subjects s ON ca.subject_id = s.id
+        JOIN teachers t ON ca.teacher_id = t.user_id
+        JOIN users u ON t.user_id = u.id
+        WHERE l.id = %s"""
 
         with self.conn.cursor() as cur:
             cur.execute(query, (lesson_id,))

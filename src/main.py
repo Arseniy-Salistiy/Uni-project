@@ -4,6 +4,7 @@ from pathlib import Path
 import time
 
 from fastapi import FastAPI, Depends, Request
+from fastapi.middleware.cors import CORSMiddleware
 from yoyo import get_backend, read_migrations
 import logging
 import psycopg2
@@ -31,6 +32,14 @@ async def lifespan(app: FastAPI):
     close_pool()
 
 app = FastAPI(lifespan=lifespan, swagger_ui_parameters={"persistAuthorization": True})
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.middleware('http')
 async def add_process_time_header(request: Request, call_next):

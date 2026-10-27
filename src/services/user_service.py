@@ -6,6 +6,7 @@ from src.repository.group_repository import GroupRepository
 from src.repository.student_repository import StudentRepository
 from src.repository.teacher_repository import TeacherRepository
 from src.repository.user_repository import UserRepository
+from src.core.config import settings
 from src.schemas.user_schemas import CreateUser, CreateTeacher, CreateStudent, TeacherPatch, StudentPatch, UserPatch
 from src.db.database import get_db
 
@@ -34,7 +35,11 @@ class UserService:
 
         return new_user
 
-    def fetch_student_by_id(self, student_id: int) -> None | Dict[str, Any]:
+    def fetch_student_by_id(self, student_id: int, cur_user: dict) -> None | Dict[str, Any]:
+        if cur_user.get('role_id') == settings.STUDENT and student_id != cur_user.get('id'):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                                detail='Нельзя смотреть профиль другого студента')
+
         student = self.student_repo.get_student_by_id(student_id)
 
         if student is None:

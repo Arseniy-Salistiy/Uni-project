@@ -10,8 +10,14 @@ class AcademicPerofrmaceRepository:
         self.conn = conn
 
     def get_all_assignments_group(self, course_assignment_id: int) -> List[Dict[str, Any]]:
-        query = """SELECT * FROM assignments
-                    WHERE course_assignment_id = %s
+        query = """SELECT  
+                        a.id, a.title, a.type, g.name as group, 
+                        s.name as subject, a.coefficient, a.max_grade
+                    FROM assignments a
+                    JOIN course_assignments as ca ON ca.id = a.course_assignment_id
+                    JOIN groups as g ON g.id = ca.group_id
+                    JOIN subjects as s ON s.id = ca.subject_id
+                    WHERE a.course_assignment_id = %s
                 """
         
         with self.conn.cursor() as cur:
@@ -19,8 +25,14 @@ class AcademicPerofrmaceRepository:
             return cur.fetchall()
 
     def get_assignment_by_id(self, id: int) -> Dict[str, Any]:
-        query = """SELECT * FROM assignments
-                    WHERE id = %s
+        query = """SELECT  
+                        a.id, a.title, a.type, g.name as group, 
+                        s.name as subject, a.coefficient, a.max_grade
+                    FROM assignments a
+                    JOIN course_assignments as ca ON ca.id = a.course_assignment_id
+                    JOIN groups as g ON g.id = ca.group_id
+                    JOIN subjects as s ON s.id = ca.subject_id
+                    WHERE a.id = %s
                 """
         
         with self.conn.cursor() as cur:

@@ -13,7 +13,7 @@ from src.db.database import get_db
 logger = logging.getLogger(__name__)
 
 password_hash = PasswordHash.recommended()
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='users/login')
 
 def hash_password(password: str) -> str:

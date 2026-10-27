@@ -60,11 +60,14 @@ class CourseAssignmentRepository:
 
     def get_assignments_for_group(self, group_id: int) -> None | List[Dict[str, Any]]:
         query = """SELECT 
-                    g.name, s.name, ca.teacher_id,
+                    ca.id, g.name as group, s.name as subject,
+                    CONCAT_WS(' ', u.first_name, u.middle_name, u.last_name) as teacher,
                     ca.term, ca.academic_year
                    FROM course_assignments as ca
                    JOIN groups as g ON g.id = ca.group_id
                    JOIN subjects as s ON s.id = ca.subject_id
+                   JOIN teachers as t ON t.user_id = ca.teacher_id
+                   JOIN users as u ON u.id = t.user_id
                    WHERE ca.group_id = %s
         """
 

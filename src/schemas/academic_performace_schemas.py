@@ -11,8 +11,14 @@ class CreateAssignment(BaseModel):
     coefficient: Decimal = Field(default=Decimal(1.00), ge=Decimal(1.00), le=Decimal(99.99))
     max_grade: int = Field(default=5, ge=0, le=100)
 
-class Assignmnet(CreateAssignment):
+class Assignmnet(BaseModel):
     id: int
+    title: str
+    type: AssignmentType
+    group: str
+    subject: str
+    coefficient: float
+    max_grade: int
 
 class CreateGrade(BaseModel):
     student_id: int

@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, status, Query
+from typing import List
 
 from src.services.course_service import get_course_assignment_service, CourseAssignmentService
 from src.services.lessons_service import get_lessons_service, LessonsService
 from src.repository.lesson_repository import LessonsRepository, get_lesson_repo
 from src.schemas.lessons_schemas import *
 from src.schemas.user_schemas import User
-from src.schemas.course_schemas import CreateCourseAssignment, CourseAssignmentSchema, CourseAssignmentPatch
+from src.schemas.course_schemas import *
 from src.core.roles import Roles
 from src.core.auth import get_user
 from src.core.config import settings
@@ -22,7 +23,7 @@ def assign_course(
     res = service.assign_course(payload, dict(cur_user)['id'])
     return res
 
-@router.get('/group/course/assignments')
+@router.get('/group/{group_id}/course/assignments', response_model=List[CourseAssignmentGet])
 def get_assignments(
     group_id: int,
     service: CourseAssignmentService = Depends(get_course_assignment_service),
@@ -52,13 +53,13 @@ def create_lesson(payload: CreateLesson,
                 service: LessonsService = Depends(get_lessons_service)):
     return service.create_lesson(payload, dict(cur_user)['id'])
 
-@router.get('/lessons/groups/{group_id}', response_model=list[Lesson])
+@router.get('/lessons/groups/{group_id}', response_model=list[LessonGet])
 def get_lessons_group(group_id: int, lesson_date: LessonDate = Query(),
                         role_check: bool = Depends(Roles([settings.STUDENT, settings.TEACHER, settings.DEAN])),
                         service: LessonsService = Depends(get_lessons_service)):
     return service.get_lessons_by_group(group_id, lesson_date)
 
-@router.get('/lessons/{lesson_id}', response_model=Lesson)
+@router.get('/lessons/{lesson_id}', response_model=LessonGet)
 def get_lesson_id(lesson_id: int,
                     repo: LessonsRepository = Depends(get_lesson_repo)):
     return repo.get_lesson_by_id(lesson_id)
