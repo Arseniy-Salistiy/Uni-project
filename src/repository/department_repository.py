@@ -9,7 +9,7 @@ class DepartmentRepository:
         self.conn = conn
 
     def get_all_departments(self) -> List[Dict[str, Any]]:
-        query = """SELECT * FROM departments ORDER BY id"""
+        query = """SELECT id, name FROM departments ORDER BY id"""
 
         with self.conn.cursor() as cur:
             cur.execute(query)

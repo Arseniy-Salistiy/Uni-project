@@ -8,7 +8,7 @@ class MajorRepository:
         self.conn = conn
 
     def get_all_majors(self) -> List[Dict[str, Any]]:
-        query = """SELECT * FROM majors"""
+        query = """SELECT id, name FROM majors"""
 
         with self.conn.cursor() as cur:
             cur.execute(query)

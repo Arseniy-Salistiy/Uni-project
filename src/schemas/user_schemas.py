@@ -1,7 +1,8 @@
 import re
 from datetime import date
+from typing import Any
 
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, model_validator
 
 from src.schemas.enums import *
 
@@ -35,6 +36,23 @@ class User(BaseModel):
     email: EmailStr
     role_id: int
 
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str
+    role: str
+
+    @model_validator(mode='before')
+    @classmethod
+    def convert_role(cls, data: Any) -> Any:
+        if isinstance(data, dict) and "role" in data:
+            role_val = data["role"]
+            if isinstance(role_val, int):
+                try:
+                    data["role"] = UserRole(role_val).get_role
+                except ValueError:
+                    data["role"] = "unknown"
+        return data
+
 class TeacherPatch(BaseModel):
     department_id: None|int = Field(default=None, examples=[None])
     position: None|str = Field(default=None, examples=[None])
@@ -55,3 +73,7 @@ class UserPatch(BaseModel):
     email: EmailStr|None = Field(default=None, examples=[None])
     phone: str|None = Field(default=None, examples=[None], pattern=r"^(\+7|8)[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$")
     password: str|None = Field(default=None, examples=[None])
+
+class InfoItem(BaseModel):
+    id: int
+    name: str

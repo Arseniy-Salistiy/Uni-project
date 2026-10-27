@@ -1,5 +1,7 @@
 from enum import Enum
 
+from src.core.config import settings
+
 class EducationForm(str, Enum):
     FULL_TIME = 'очное'
     PART_TIME = 'заочное'
@@ -48,3 +50,13 @@ class Type(str, Enum):
     GROUP = "Группа"
     COURSE = "Курс"
     MAJOR = "Специальность"
+
+class UserRole(int, Enum):
+    ADMIN = settings.ADMIN
+    DEAN = settings.DEAN
+    TEACHER = settings.TEACHER
+    STUDENT = settings.STUDENT
+
+    @property
+    def get_role(self):
+        return self.name.lower()

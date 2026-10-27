@@ -1,6 +1,6 @@
 import psycopg2
 from fastapi import Depends
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 from src.db.database import get_db
 
@@ -14,6 +14,13 @@ class SubjectRepository:
         with self.conn.cursor() as cur:
             cur.execute(query, (id,))
             return cur.fetchone()
+
+    def get_all_subjects(self) -> List[Dict[str, Any]]:
+        query = "SELECT id, name FROM subjects"
+
+        with self.conn.cursor() as cur:
+            cur.execute(query)
+            return cur.fetchall()
 
 def get_subject_repo(conn=Depends(get_db)) -> SubjectRepository:
     return SubjectRepository(conn)
