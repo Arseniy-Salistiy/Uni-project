@@ -43,3 +43,13 @@ class GradeDetailedResponse(BaseModel):
     teacher_id: None | int
     teacher_fio: None | str
     is_final: bool
+
+class FinalGrade(BaseModel):
+    student_id: int
+    subject: str
+    final_grade: float
+
+class StudentGpaResponse(BaseModel):
+    student_id: int
+    student_fio: str
+    gpa: float

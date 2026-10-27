@@ -37,3 +37,9 @@ class AssignmentType(str, Enum):
     TERM_PAPER = "курсовая"
     ESSAY = "реферат"
     PROJECT = "проект"
+
+class ControlForm(str, Enum):
+    EXAM = "экзамен"
+    TEST = "зачёт"
+    TERM_PAPER = "курсовая"
+    GRADED_TEST = "дифференцированный зачёт"
