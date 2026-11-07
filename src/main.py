@@ -3,7 +3,8 @@ from typing import Annotated
 from pathlib import Path
 import time
 
-from fastapi import FastAPI, Depends, Request
+from fastapi import FastAPI, Depends, Request, HTTPException
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from yoyo import get_backend, read_migrations
 import logging
@@ -17,6 +18,8 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s (%(filename)s:%(lineno)d): %(message)s",
 )
+
+logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -32,6 +35,25 @@ async def lifespan(app: FastAPI):
     close_pool()
 
 app = FastAPI(lifespan=lifespan, swagger_ui_parameters={"persistAuthorization": True})
+
+@app.exception_handler(HTTPException)
+def global_exception_handler(request, exc: HTTPException):
+    logger.warning(
+        f"Ошибка {exc.status_code} при {request.method} {request.url.path}"
+        f"Причина {exc.detail}"
+    )
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "success": False,
+            "result": None,
+            "error": {
+                "message": exc.detail,
+                "code": exc.status_code
+            }
+        }
+    )
 
 app.add_middleware(
     CORSMiddleware,
